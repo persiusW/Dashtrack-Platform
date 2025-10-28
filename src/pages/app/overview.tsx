@@ -1,127 +1,157 @@
 
-import { AppLayout } from "@/components/layouts/AppLayout";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, MousePointerClick, Users, Link2 } from "lucide-react";
-import { useSubscriptionGate } from "@/hooks/useSubscriptionGate";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useRouter } from "next/router";
+import { GlobalFilters } from "@/components/dashboard/GlobalFilters";
+import { KPICard } from "@/components/dashboard/KPICard";
+import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
+import { TopPerformersCard } from "@/components/dashboard/TopPerformersCard";
+import { useGlobalFilters } from "@/hooks/useGlobalFilters";
+import {
+  dashboardService,
+  KPIData,
+  TimeSeriesData,
+  TopZone,
+  TopAgent,
+} from "@/services/dashboardService";
+import { MousePointerClick, CheckCircle2, Users, Zap } from "lucide-react";
 
 export default function OverviewPage() {
-  const { profile } = useAuth();
-  const { plan } = useSubscriptionGate();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const { filters } = useGlobalFilters();
 
-  const stats = [
-    {
-      title: "Total Clicks",
-      value: "12,345",
-      change: "+12.5%",
-      icon: MousePointerClick,
-      color: "text-blue-600",
-    },
-    {
-      title: "Active Zones",
-      value: "24",
-      change: "+3",
-      icon: BarChart3,
-      color: "text-green-600",
-    },
-    {
-      title: "Active Agents",
-      value: "56",
-      change: "+8",
-      icon: Users,
-      color: "text-purple-600",
-    },
-    {
-      title: "Tracked Links",
-      value: "189",
-      change: "+15",
-      icon: Link2,
-      color: "text-orange-600",
-    },
-  ];
+  const [kpis, setKpis] = useState<KPIData | null>(null);
+  const [timeSeries, setTimeSeries] = useState<TimeSeriesData[]>([]);
+  const [topZones, setTopZones] = useState<TopZone[]>([]);
+  const [topAgents, setTopAgents] = useState<TopAgent[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  return (
-    <AppLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            Overview
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Welcome back, {profile?.role.replace("_", " ")}
-          </p>
-        </div>
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
 
-        {plan === "free" && (
-          <Alert>
-            <AlertDescription>
-              You are on the free plan. Upgrade to unlock advanced features and remove limitations.
-            </AlertDescription>
-          </Alert>
-        )}
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user, filters]);
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={stat.title}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {stat.title}
-                  </CardTitle>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {stat.change} from last month
-                  </p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [kpiData, timeSeriesData, zonesData, agentsData] = await Promise.all([
+        dashboardService.getOverviewKPIs(filters.dateFrom, filters.dateTo),
+        dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, filters.activationId),
+        dashboardService.getTopZones(filters.dateFrom, filters.dateTo),
+        dashboardService.getTopAgents(filters.dateFrom, filters.dateTo),
+      ]);
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Last 7 days of clicks</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                Time series chart placeholder
-              </div>
-            </CardContent>
-          </Card>
+      setKpis(kpiData);
+      setTimeSeries(timeSeriesData);
+      setTopZones(zonesData);
+      setTopAgents(agentsData);
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Zones</CardTitle>
-              <CardDescription>Highest performing zones</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Zone {i}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Location placeholder
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold">{1000 - i * 100}</p>
-                      <p className="text-sm text-muted-foreground">clicks</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+  if (authLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>
-    </AppLayout>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Overview Dashboard</h1>
+        <p className="text-muted-foreground mt-1">
+          Monitor your campaign performance and key metrics
+        </p>
+      </div>
+
+      <GlobalFilters />
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <KPICard
+              title="Total Clicks"
+              value={kpis?.totalClicks || 0}
+              icon={MousePointerClick}
+              description="All clicks received"
+            />
+            <KPICard
+              title="Valid Clicks"
+              value={kpis?.validClicks || 0}
+              icon={CheckCircle2}
+              description="Non-bot clicks"
+            />
+            <KPICard
+              title="Active Agents"
+              value={kpis?.totalAgents || 0}
+              icon={Users}
+              description="Currently active"
+            />
+            <KPICard
+              title="Live Activations"
+              value={kpis?.activeActivations || 0}
+              icon={Zap}
+              description="Active campaigns"
+            />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <TimeSeriesChart data={timeSeries} />
+            </div>
+            <div>
+              <TopPerformersCard
+                title="Top Zones"
+                items={topZones.map((zone) => ({
+                  id: zone.id,
+                  name: zone.name,
+                  value: zone.validClicks,
+                }))}
+                emptyMessage="No zone data available"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <TopPerformersCard
+              title="Top Agents"
+              items={topAgents.map((agent) => ({
+                id: agent.id,
+                name: agent.name,
+                value: agent.validClicks,
+                link: `/a/${agent.publicStatsToken}`,
+              }))}
+              emptyMessage="No agent data available"
+            />
+            <div className="bg-white dark:bg-gray-800 border rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-4">Top NFC Taglines</h3>
+              <div className="text-center py-8 text-muted-foreground">
+                Coming in v2
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
