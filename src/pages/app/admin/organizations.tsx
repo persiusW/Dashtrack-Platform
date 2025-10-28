@@ -33,7 +33,7 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Building2 } from "lucide-react";
 
 type Organization = {
-  created_at: string;
+  created_at: string | null;
   id: string;
   name: string;
   owner_user_id: string | null;
@@ -61,15 +61,15 @@ export default function AdminOrganizationsPage() {
 
   useEffect(() => {
     if (user) {
-      checkAdminAccess();
+      checkAdminAccess(user.id);
     }
   }, [user]);
 
-  const checkAdminAccess = async () => {
+  const checkAdminAccess = async (userId: string) => {
     const { data: userData } = await supabase
       .from("users")
       .select("role")
-      .eq("id", user?.id)
+      .eq("id", userId)
       .single();
 
     if (userData?.role !== "admin") {
@@ -204,7 +204,7 @@ export default function AdminOrganizationsPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {new Date(org.created_at).toLocaleDateString()}
+                      {org.created_at ? new Date(org.created_at).toLocaleDateString() : "N/A"}
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm">

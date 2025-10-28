@@ -24,14 +24,14 @@ type Activation = Database["public"]["Tables"]["activations"]["Row"];
 const trackedLinkSchema = z.object({
   slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
   destination_strategy: z.enum(["single", "smart"]).default("smart"),
-  single_url: z.string().optional(),
-  ios_url: z.string().optional(),
-  android_url: z.string().optional(),
-  fallback_url: z.string().optional(),
-  notes: z.string().optional(),
-  zone_id: z.string().optional(),
-  agent_id: z.string().optional(),
-  is_active: z.boolean().default(true)
+  single_url: z.string().optional().nullable(),
+  ios_url: z.string().optional().nullable(),
+  android_url: z.string().optional().nullable(),
+  fallback_url: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  zone_id: z.string().optional().nullable(),
+  agent_id: z.string().optional().nullable(),
+  is_active: z.boolean().default(true).nullable(),
 });
 
 // Adjusted form data type to match what the form uses
@@ -61,13 +61,13 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
       ...link,
       slug: link?.slug || "",
       destination_strategy: link?.destination_strategy as "single" | "smart" || "smart",
-      single_url: link?.single_url || "",
-      ios_url: link?.ios_url || "",
-      android_url: link?.android_url || "",
-      fallback_url: link?.fallback_url || "",
-      notes: link?.notes || "",
-      zone_id: link?.zone_id || "",
-      agent_id: link?.agent_id || "",
+      single_url: link?.single_url ?? "",
+      ios_url: link?.ios_url ?? "",
+      android_url: link?.android_url ?? "",
+      fallback_url: link?.fallback_url ?? "",
+      notes: link?.notes ?? "",
+      zone_id: link?.zone_id ?? "",
+      agent_id: link?.agent_id ?? "",
       is_active: link?.is_active ?? true,
       activation_id: link?.activation_id || activationId,
     },
@@ -254,7 +254,7 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
         <div>
           <Label htmlFor="zone_id">Zone (Optional)</Label>
           <Select
-            value={form.watch("zone_id") || ""}
+            value={form.watch("zone_id") ?? ""}
             onValueChange={(value) => form.setValue("zone_id", value || undefined)}
           >
             <SelectTrigger>
@@ -274,7 +274,7 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
         <div>
           <Label htmlFor="agent_id">Agent (Optional)</Label>
           <Select
-            value={form.watch("agent_id") || ""}
+            value={form.watch("agent_id") ?? ""}
             onValueChange={(value) => form.setValue("agent_id", value || undefined)}
           >
             <SelectTrigger>
@@ -301,7 +301,7 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
         <Label htmlFor="is_active">Active</Label>
         <Switch
           id="is_active"
-          checked={form.watch("is_active")}
+          checked={form.watch("is_active") ?? true}
           onCheckedChange={(checked) => form.setValue("is_active", checked)}
         />
       </div>

@@ -454,7 +454,7 @@ export const dashboardService = {
 
     const agentClickMap = new Map<string, number>();
     agentClicks?.forEach(click => {
-      if (!click.is_bot) {
+      if (!click.is_bot && click.agent_id) {
         agentClickMap.set(click.agent_id, (agentClickMap.get(click.agent_id) || 0) + 1);
       }
     });
