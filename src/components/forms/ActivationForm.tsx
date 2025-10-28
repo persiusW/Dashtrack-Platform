@@ -26,7 +26,7 @@ import { useState, useEffect } from "react";
 import { Database } from "@/integrations/supabase/types";
 
 type Activation = Database["public"]["Tables"]["activations"]["Row"];
-type ActivationInsert = Omit<Activation, "id" | "created_at" | "updated_at" | "organization_id">;
+type ActivationInsert = Omit&lt;Activation, "id" | "created_at" | "updated_at" | "organization_id"&gt;;
 
 const activationSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -38,7 +38,7 @@ const activationSchema = z.object({
   default_landing_url: z.string().url("Must be a valid URL"),
 });
 
-type ActivationFormData = z.infer<typeof activationSchema>;
+type ActivationFormData = z.infer&lt;typeof activationSchema&gt;;
 
 interface ActivationFormProps {
   activation?: Activation | null;
