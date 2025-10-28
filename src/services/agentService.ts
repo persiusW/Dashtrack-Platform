@@ -60,16 +60,23 @@ export const agentService = {
    * Create a new agent with auto-generated public_stats_token
    */
   async createAgent(
-    agent: Omit<AgentInsert, "id" | "created_at" | "updated_at" | "public_stats_token">
+    agent: Omit<AgentInsert, "id" | "created_at" | "updated_at" | "public_stats_token" | "organization_id">
   ): Promise<Agent> {
-    const agentWithToken = {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user?.app_metadata?.organization_id) {
+      throw new Error("User organization not found");
+    }
+
+    const agentWithTokenAndOrg = {
       ...agent,
+      organization_id: user.app_metadata.organization_id,
       public_stats_token: this.generatePublicStatsToken()
     };
 
     const { data, error } = await supabase
       .from("agents")
-      .insert(agentWithToken)
+      .insert(agentWithTokenAndOrg)
       .select()
       .single();
 

@@ -16,10 +16,10 @@ type Activation = Database["public"]["Tables"]["activations"]["Row"];
 const activationSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
-  type: z.string().default("single"),
+  type: z.enum(["single", "multi"]).default("single"),
   start_at: z.string().optional(),
   end_at: z.string().optional(),
-  status: z.string().default("draft"),
+  status: z.enum(["draft", "live", "paused", "ended"]).default("draft"),
   default_landing_url: z.string().url("Must be a valid URL")
 });
 
@@ -55,17 +55,24 @@ export function ActivationForm({ activation, organizationId, onSuccess, onCancel
   const onSubmit = async (data: ActivationFormData) => {
     setLoading(true);
     try {
+      const payload = {
+        ...data,
+        description: data.description || null,
+        start_at: data.start_at || null,
+        end_at: data.end_at || null,
+      };
+
       if (activation) {
-        await activationService.updateActivation(activation.id, data);
+        await activationService.updateActivation(activation.id, payload);
       } else {
         const createData: Omit<Activation, "id" | "created_at" | "updated_at" | "organization_id"> = {
-          name: data.name,
-          description: data.description || null,
-          type: data.type,
-          start_at: data.start_at || null,
-          end_at: data.end_at || null,
-          status: data.status,
-          default_landing_url: data.default_landing_url,
+          name: payload.name,
+          description: payload.description,
+          type: payload.type as "single" | "multi",
+          start_at: payload.start_at,
+          end_at: payload.end_at,
+          status: payload.status as "draft" | "live" | "paused" | "ended",
+          default_landing_url: payload.default_landing_url,
         };
         await activationService.createActivation(createData);
       }
