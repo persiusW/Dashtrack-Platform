@@ -79,7 +79,7 @@ function serializeCookie(name: string, value: string, options: CookieOptions) {
   const stringValue =
     typeof value === 'object' ? 'j:' + JSON.stringify(value) : String(value);
 
-  if ('maxAge' in options) {
+  if (typeof options.maxAge === 'number') {
     options.expires = new Date(Date.now() + options.maxAge * 1000);
   }
 
