@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -22,16 +21,17 @@ export function FilterBar() {
 
   const defaults = getDefaultDates();
 
-  const [from, setFrom] = useState(searchParams.get("from") || defaults.from);
-  const [to, setTo] = useState(searchParams.get("to") || defaults.to);
-  const [activationId, setActivationId] = useState(searchParams.get("activationId") || "");
-  const [zoneId, setZoneId] = useState(searchParams.get("zoneId") || "");
+  const [from, setFrom] = useState(searchParams?.get("from") || defaults.from);
+  const [to, setTo] = useState(searchParams?.get("to") || defaults.to);
+  const [activationId, setActivationId] = useState(searchParams?.get("activationId") || "");
+  const [zoneId, setZoneId] = useState(searchParams?.get("zoneId") || "");
 
   // TODO: Fetch activations and zones from API
   const activations: Array<{ id: string; name: string }> = [];
   const zones: Array<{ id: string; name: string }> = [];
 
   useEffect(() => {
+    if (!pathname) return;
     // Update query params when filters change
     const params = new URLSearchParams();
     if (from) params.set("from", from);

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -33,7 +32,7 @@ export function SidebarNav() {
       <div className="p-4 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isActive = !!pathname && (pathname === item.href || pathname.startsWith(item.href + "/"));
           
           return (
             <Link
