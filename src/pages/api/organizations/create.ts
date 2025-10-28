@@ -63,6 +63,15 @@ export default async function handler(
       });
     }
 
+    // Add a null check for the created organization
+    if (!org) {
+      return res.status(500).json({
+        ok: false,
+        error: "Failed to create organization",
+        details: "Organization was not created successfully, no ID returned.",
+      });
+    }
+
     // Link user to organization
     const { error: userLinkError } = await supabase.from("users").upsert({
       id: user.id,
