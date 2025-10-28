@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
@@ -8,18 +7,27 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+type AuthMode = "signin" | "signup";
 
 export function LoginForm() {
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
+  const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
@@ -32,8 +40,60 @@ export function LoginForm() {
     }
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Create organization first
+      const { data: orgData, error: orgError } = await supabase
+        .from("organizations")
+        .insert([{ name: organizationName, plan: "free" }])
+        .select()
+        .single();
+
+      if (orgError) throw orgError;
+
+      // Sign up user with organization_id
+      await signUp(email, password, orgData.id, "client_manager");
+
+      setSuccess("Account created successfully! Please check your email to verify your account.");
+      
+      // Clear form
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setFullName("");
+      setOrganizationName("");
+      
+      // Switch to sign in mode after 2 seconds
+      setTimeout(() => {
+        setMode("signin");
+        setSuccess("");
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || "Failed to create account");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setError("");
+    setSuccess("");
     setLoading(true);
     try {
       await signInWithGoogle();
@@ -43,18 +103,64 @@ export function LoginForm() {
     }
   };
 
+  const toggleMode = () => {
+    setMode(mode === "signin" ? "signup" : "signin");
+    setError("");
+    setSuccess("");
+  };
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Sign In</CardTitle>
-        <CardDescription>Enter your credentials to access your account</CardDescription>
+        <CardTitle>{mode === "signin" ? "Sign In" : "Create Account"}</CardTitle>
+        <CardDescription>
+          {mode === "signin"
+            ? "Enter your credentials to access your account"
+            : "Create a new account to get started"}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={mode === "signin" ? handleSignIn : handleSignUp} className="space-y-4">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
+          )}
+
+          {success && (
+            <Alert>
+              <AlertDescription className="text-green-600">{success}</AlertDescription>
+            </Alert>
+          )}
+
+          {mode === "signup" && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="John Doe"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="organizationName">Organization Name</Label>
+                <Input
+                  id="organizationName"
+                  type="text"
+                  placeholder="Acme Inc."
+                  value={organizationName}
+                  onChange={(e) => setOrganizationName(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </>
           )}
 
           <div className="space-y-2">
@@ -75,6 +181,7 @@ export function LoginForm() {
             <Input
               id="password"
               type="password"
+              placeholder={mode === "signup" ? "At least 6 characters" : ""}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -82,14 +189,30 @@ export function LoginForm() {
             />
           </div>
 
+          {mode === "signup" && (
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+          )}
+
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                {mode === "signin" ? "Signing in..." : "Creating account..."}
               </>
-            ) : (
+            ) : mode === "signin" ? (
               "Sign In"
+            ) : (
+              "Create Account"
             )}
           </Button>
 
@@ -129,6 +252,17 @@ export function LoginForm() {
             </svg>
             Google
           </Button>
+
+          <div className="text-center text-sm">
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="text-primary hover:underline"
+              disabled={loading}
+            >
+              {mode === "signin" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            </button>
+          </div>
         </form>
       </CardContent>
     </Card>
