@@ -1,106 +1,105 @@
 
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { z } from 'zod';
+import { createPagesServerClient } from '@supabase/ssr';
 
 const createOrgSchema = z.object({
-  organizationName: z.string().min(2, "Organization name must be at least 2 characters"),
-  plan: z.enum(["free", "pro", "enterprise"]).default("free"),
+  organizationName: z.string().min(2, 'Organization name must be at least 2 characters'),
+  plan: z.enum(['free', 'pro', 'enterprise']).default('free'),
 });
 
-export async function POST(req: NextRequest) {
-  try {
-    const supabase = createRouteHandlerClient({ cookies });
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
 
-    // Check authentication
+  try {
+    const supabase = createPagesServerClient({ req, res });
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
-      return NextResponse.json(
-        { ok: false, error: "Not authenticated. Please log in first." },
-        { status: 401 }
-      );
+      return res.status(401).json({ 
+        ok: false, 
+        error: 'Not authenticated. Please log in first.' 
+      });
     }
 
-    // Validate request body
-    const body = await req.json().catch(() => ({}));
-    const parsed = createOrgSchema.safeParse(body);
-    
+    const parsed = createOrgSchema.safeParse(req.body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { ok: false, error: "Validation failed", details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'Validation failed', 
+        details: parsed.error.flatten() 
+      });
     }
 
     const { organizationName, plan } = parsed.data;
 
-    // Check if user already has an organization
     const { data: existingUser } = await supabase
-      .from("users")
-      .select("organization_id")
-      .eq("id", user.id)
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
       .single();
 
     if (existingUser?.organization_id) {
-      return NextResponse.json(
-        { ok: false, error: "User already belongs to an organization" },
-        { status: 400 }
-      );
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'User already belongs to an organization' 
+      });
     }
 
-    // Create organization
     const { data: org, error: orgError } = await supabase
-      .from("organizations")
-      .insert({
-        name: organizationName,
-        plan: plan,
-      })
-      .select("id, name, plan")
+      .from('organizations')
+      .insert({ name: organizationName, plan: plan })
+      .select('id, name, plan')
       .single();
 
     if (orgError) {
-      console.error("Organization creation error:", orgError);
-      return NextResponse.json(
-        { ok: false, error: "Failed to create organization", details: orgError.message },
-        { status: 400 }
-      );
+      console.error('Organization creation error:', orgError);
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'Failed to create organization', 
+        details: orgError.message 
+      });
     }
 
-    // Link user to organization with client_manager role
     const { error: userError } = await supabase
-      .from("users")
+      .from('users')
       .upsert({
         id: user.id,
         organization_id: org.id,
-        role: "client_manager",
+        role: 'client_manager',
       });
 
     if (userError) {
-      console.error("User link error:", userError);
-      // Try to clean up the organization if user link fails
-      await supabase.from("organizations").delete().eq("id", org.id);
-      return NextResponse.json(
-        { ok: false, error: "Failed to link user to organization", details: userError.message },
-        { status: 400 }
-      );
+      console.error('User link error:', userError);
+      await supabase.from('organizations').delete().eq('id', org.id);
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'Failed to link user to organization', 
+        details: userError.message 
+      });
     }
 
-    return NextResponse.json({
+    return res.status(200).json({
       ok: true,
       organization: {
         id: org.id,
         name: org.name,
         plan: org.plan,
       },
-      message: "Organization created successfully",
+      message: 'Organization created successfully',
     });
   } catch (error) {
-    console.error("Create organization error:", error);
-    return NextResponse.json(
-      { ok: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    console.error('Create organization error:', error);
+    return res.status(500).json({ 
+      ok: false, 
+      error: 'Internal server error' 
+    });
   }
 }

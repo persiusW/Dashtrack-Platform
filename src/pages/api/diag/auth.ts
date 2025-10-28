@@ -1,10 +1,17 @@
 
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { createPagesServerClient } from "@supabase/ssr";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export async function GET(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+
+  const supabase = createPagesServerClient({ req, res });
 
   const env = {
     NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -36,7 +43,7 @@ export async function GET(req: NextRequest) {
     userOrgInfo = userRecord;
   }
 
-  return NextResponse.json({
+  return res.status(200).json({
     timestamp: new Date().toISOString(),
     env,
     session_present: !!sessionData?.session,
@@ -49,8 +56,8 @@ export async function GET(req: NextRequest) {
     readOk: !readErr,
     readErr: readErr?.message || null,
     cookies_present: {
-      sb_access_token: req.cookies.has("sb-access-token"),
-      sb_refresh_token: req.cookies.has("sb-refresh-token"),
+      "sb-access-token": !!req.cookies["sb-access-token"],
+      "sb-refresh-token": !!req.cookies["sb-refresh-token"],
     }
   });
 }

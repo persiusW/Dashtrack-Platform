@@ -1,8 +1,7 @@
 
-import { NextRequest, NextResponse } from "next/server";
+import type { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { createPagesServerClient } from "@supabase/ssr";
 
 const signupSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -10,17 +9,23 @@ const signupSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters").optional(),
 });
 
-export async function POST(req: NextRequest) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createPagesServerClient({ req, res });
     
-    const body = await req.json().catch(() => ({}));
-    const parsed = signupSchema.safeParse(body);
+    const parsed = signupSchema.safeParse(req.body);
     
     if (!parsed.success) {
-      return NextResponse.json(
-        { ok: false, error: "Validation failed", details: parsed.error.flatten() },
-        { status: 400 }
+      return res.status(400).json(
+        { ok: false, error: "Validation failed", details: parsed.error.flatten() }
       );
     }
 
@@ -38,20 +43,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      return NextResponse.json(
-        { ok: false, error: error.message },
-        { status: 400 }
+      return res.status(400).json(
+        { ok: false, error: error.message }
       );
     }
 
     if (!data.user) {
-      return NextResponse.json(
-        { ok: false, error: "User creation failed" },
-        { status: 500 }
+      return res.status(500).json(
+        { ok: false, error: "User creation failed" }
       );
     }
 
-    return NextResponse.json({
+    return res.status(200).json({
       ok: true,
       userId: data.user.id,
       email: data.user.email,
@@ -60,9 +63,8 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Signup error:", error);
-    return NextResponse.json(
-      { ok: false, error: "Internal server error" },
-      { status: 500 }
+    return res.status(500).json(
+      { ok: false, error: "Internal server error" }
     );
   }
 }
