@@ -656,6 +656,17 @@ export type Database = {
       }
       recompute_daily_metrics: { Args: never; Returns: undefined }
       recompute_recent_daily_metrics: { Args: never; Returns: undefined }
+      rls_report: {
+        Args: { target_table?: string }
+        Returns: {
+          policy_command: string
+          policy_name: string
+          policy_permissive: string
+          policy_qual: string
+          policy_roles: string[]
+          policy_with_check: string
+        }[]
+      }
       upsert_daily_metrics:
         | {
             Args: {
