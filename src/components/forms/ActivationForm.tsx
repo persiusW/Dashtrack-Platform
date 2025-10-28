@@ -68,10 +68,10 @@ export function ActivationForm({ activation, organizationId, onSuccess, onCancel
         const createData: Omit<Activation, "id" | "created_at" | "updated_at" | "organization_id"> = {
           name: payload.name,
           description: payload.description,
-          type: payload.type as "single" | "multi",
+          type: payload.type,
           start_at: payload.start_at,
           end_at: payload.end_at,
-          status: payload.status as "draft" | "live" | "paused" | "ended",
+          status: payload.status,
           default_landing_url: payload.default_landing_url,
         };
         await activationService.createActivation(createData);
@@ -101,7 +101,7 @@ export function ActivationForm({ activation, organizationId, onSuccess, onCancel
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="type">Type *</Label>
-          <Select defaultValue={watch("type")} onValueChange={(value) => setValue("type", value as "single" | "multi")}>
+          <Select value={watch("type")} onValueChange={(value) => setValue("type", value as "single" | "multi")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -114,7 +114,7 @@ export function ActivationForm({ activation, organizationId, onSuccess, onCancel
 
         <div>
           <Label htmlFor="status">Status *</Label>
-          <Select defaultValue={watch("status")} onValueChange={(value) => setValue("status", value as any)}>
+          <Select value={watch("status")} onValueChange={(value) => setValue("status", value as "draft" | "live" | "paused" | "ended")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
