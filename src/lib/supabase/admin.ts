@@ -17,7 +17,7 @@ if (!supabaseServiceRoleKey) {
 // Using a function to create the client ensures that the environment variables
 // are evaluated at the time of the first call, not at module load time.
 // A simple memoization pattern is used to avoid creating multiple clients.
-let adminClient: SupabaseClient&lt;Database&gt; | null = null;
+let adminClient: SupabaseClient<Database> | null = null;
 
 export const createSupabaseAdminClient = () => {
   if (adminClient) {
@@ -30,7 +30,7 @@ export const createSupabaseAdminClient = () => {
     );
   }
 
-  adminClient = createClient&lt;Database&gt;(supabaseUrl, supabaseServiceRoleKey, {
+  adminClient = createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
