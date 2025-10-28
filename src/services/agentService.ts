@@ -1,45 +1,30 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
-export interface Agent {
-  id: string;
-  organization_id: string;
-  name: string;
-  phone: string | null;
-  email: string | null;
-  active: boolean;
-  public_stats_token: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AgentStats {
-  agent_name: string;
-  total_clicks: number;
-  active_days: number;
-  unique_links_used: number;
-  last_click_at: string | null;
-  first_click_at: string | null;
-}
+type Agent = Database["public"]["Tables"]["agents"]["Row"];
+type AgentInsert = Database["public"]["Tables"]["agents"]["Insert"];
+type AgentUpdate = Database["public"]["Tables"]["agents"]["Update"];
 
 export const agentService = {
   /**
-   * Get all agents for the current organization
+   * Get all agents for an organization
    */
-  async getAgents(): Promise<Agent[]> {
+  async getAgents(organizationId: string): Promise<Agent[]> {
     const { data, error } = await supabase
       .from("agents")
       .select("*")
-      .order("name");
+      .eq("organization_id", organizationId)
+      .order("name", { ascending: true });
 
     if (error) throw error;
-    return data as Agent[];
+    return data || [];
   },
 
   /**
    * Get a single agent by ID
    */
-  async getAgent(id: string): Promise<Agent> {
+  async getAgent(id: string): Promise<Agent | null> {
     const { data, error } = await supabase
       .from("agents")
       .select("*")
@@ -47,36 +32,55 @@ export const agentService = {
       .single();
 
     if (error) throw error;
-    return data as Agent;
+    return data;
   },
 
   /**
-   * Create a new agent
+   * Get agent by public stats token
    */
-  async createAgent(agent: Omit<Agent, "id" | "created_at" | "updated_at" | "organization_id" | "public_stats_token">): Promise<Agent> {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user?.app_metadata?.organization_id) {
-      throw new Error("User organization not found");
-    }
+  async getAgentByToken(token: string): Promise<Agent | null> {
+    const { data, error } = await supabase
+      .from("agents")
+      .select("*")
+      .eq("public_stats_token", token)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Generate a unique public stats token (UUID)
+   */
+  generatePublicStatsToken(): string {
+    return crypto.randomUUID();
+  },
+
+  /**
+   * Create a new agent with auto-generated public_stats_token
+   */
+  async createAgent(
+    agent: Omit<AgentInsert, "id" | "created_at" | "updated_at" | "public_stats_token">
+  ): Promise<Agent> {
+    const agentWithToken = {
+      ...agent,
+      public_stats_token: this.generatePublicStatsToken()
+    };
 
     const { data, error } = await supabase
       .from("agents")
-      .insert({
-        ...agent,
-        organization_id: user.app_metadata.organization_id
-      })
+      .insert(agentWithToken)
       .select()
       .single();
 
     if (error) throw error;
-    return data as Agent;
+    return data;
   },
 
   /**
    * Update an agent
    */
-  async updateAgent(id: string, updates: Partial<Omit<Agent, "id" | "created_at" | "updated_at" | "organization_id" | "public_stats_token">>): Promise<Agent> {
+  async updateAgent(id: string, updates: AgentUpdate): Promise<Agent> {
     const { data, error } = await supabase
       .from("agents")
       .update(updates)
@@ -85,7 +89,7 @@ export const agentService = {
       .single();
 
     if (error) throw error;
-    return data as Agent;
+    return data;
   },
 
   /**
@@ -101,25 +105,56 @@ export const agentService = {
   },
 
   /**
-   * Get public agent statistics using token (no auth required)
+   * Get agents assigned to a zone
    */
-  async getPublicStats(token: string): Promise<AgentStats | null> {
+  async getAgentsByZone(zoneId: string): Promise<Agent[]> {
     const { data, error } = await supabase
-      .rpc("get_agent_public_stats", { token });
+      .from("zone_agents")
+      .select("agents(*)")
+      .eq("zone_id", zoneId);
 
     if (error) throw error;
-    return data && data.length > 0 ? data[0] : null;
+    return data?.map((row: any) => row.agents) || [];
   },
 
   /**
-   * Get agent's QR code signed URL
+   * Assign agent to zone
    */
-  async getAgentQRUrl(agentId: string, expiresIn: number = 3600): Promise<string> {
-    const { data, error } = await supabase.storage
-      .from("qr")
-      .createSignedUrl(`agents/${agentId}.png`, expiresIn);
+  async assignAgentToZone(zoneId: string, agentId: string, organizationId: string): Promise<void> {
+    const { error } = await supabase
+      .from("zone_agents")
+      .insert({
+        zone_id: zoneId,
+        agent_id: agentId,
+        organization_id: organizationId
+      });
 
     if (error) throw error;
-    return data.signedUrl;
+  },
+
+  /**
+   * Remove agent from zone
+   */
+  async removeAgentFromZone(zoneId: string, agentId: string): Promise<void> {
+    const { error } = await supabase
+      .from("zone_agents")
+      .delete()
+      .eq("zone_id", zoneId)
+      .eq("agent_id", agentId);
+
+    if (error) throw error;
+  },
+
+  /**
+   * Get zones for an agent
+   */
+  async getZonesForAgent(agentId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from("zone_agents")
+      .select("zones(*)")
+      .eq("agent_id", agentId);
+
+    if (error) throw error;
+    return data?.map((row: any) => row.zones) || [];
   }
 };

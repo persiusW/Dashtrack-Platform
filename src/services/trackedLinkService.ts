@@ -1,51 +1,41 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { qrService } from "./qrService";
+import type { Database } from "@/integrations/supabase/types";
 
-export interface TrackedLink {
-  id: string;
-  organization_id: string;
-  activation_id: string;
-  zone_id: string | null;
-  agent_id: string | null;
-  slug: string;
-  destination_strategy: "single" | "smart";
-  single_url: string | null;
-  ios_url: string | null;
-  android_url: string | null;
-  fallback_url: string | null;
-  notes: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+type TrackedLink = Database["public"]["Tables"]["tracked_links"]["Row"];
+type TrackedLinkInsert = Database["public"]["Tables"]["tracked_links"]["Insert"];
+type TrackedLinkUpdate = Database["public"]["Tables"]["tracked_links"]["Update"];
+
+export interface TrackedLinkWithQR extends TrackedLink {
+  qr_url?: string;
 }
 
 export const trackedLinkService = {
   /**
-   * Get all tracked links for the current organization
+   * Get all tracked links for an organization
    */
-  async getTrackedLinks(filters?: { activation_id?: string; zone_id?: string; agent_id?: string }): Promise<TrackedLink[]> {
-    let query = supabase.from("tracked_links").select("*");
+  async getTrackedLinks(organizationId: string, activationId?: string): Promise<TrackedLinkWithQR[]> {
+    let query = supabase
+      .from("tracked_links")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .order("created_at", { ascending: false });
 
-    if (filters?.activation_id) {
-      query = query.eq("activation_id", filters.activation_id);
-    }
-    if (filters?.zone_id) {
-      query = query.eq("zone_id", filters.zone_id);
-    }
-    if (filters?.agent_id) {
-      query = query.eq("agent_id", filters.agent_id);
+    if (activationId) {
+      query = query.eq("activation_id", activationId);
     }
 
-    const { data, error } = await query.order("created_at", { ascending: false });
+    const { data, error } = await query;
 
     if (error) throw error;
-    return data as TrackedLink[];
+    return data || [];
   },
 
   /**
    * Get a single tracked link by ID
    */
-  async getTrackedLink(id: string): Promise<TrackedLink> {
+  async getTrackedLink(id: string): Promise<TrackedLinkWithQR | null> {
     const { data, error } = await supabase
       .from("tracked_links")
       .select("*")
@@ -53,51 +43,85 @@ export const trackedLinkService = {
       .single();
 
     if (error) throw error;
-    return data as TrackedLink;
-  },
 
-  /**
-   * Get a tracked link by slug (for redirect logic)
-   */
-  async getTrackedLinkBySlug(slug: string): Promise<TrackedLink | null> {
-    const { data, error } = await supabase
-      .from("tracked_links")
-      .select("*")
-      .eq("slug", slug)
-      .eq("is_active", true)
-      .single();
-
-    if (error && error.code !== "PGRST116") throw error;
-    return data as TrackedLink | null;
-  },
-
-  /**
-   * Create a new tracked link
-   */
-  async createTrackedLink(link: Omit<TrackedLink, "id" | "created_at" | "updated_at" | "organization_id">): Promise<TrackedLink> {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user?.app_metadata?.organization_id) {
-      throw new Error("User organization not found");
+    if (data) {
+      try {
+        const qrUrl = await qrService.getQRSignedUrl(
+          data.id,
+          data.activation_id,
+          data.zone_id,
+          data.agent_id
+        );
+        return { ...data, qr_url: qrUrl };
+      } catch {
+        return data;
+      }
     }
 
+    return data;
+  },
+
+  /**
+   * Check if slug is available
+   */
+  async checkSlugAvailable(slug: string, excludeId?: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc("check_slug_available", {
+      p_slug: slug,
+      p_exclude_id: excludeId || null
+    });
+
+    if (error) throw error;
+    return data as boolean;
+  },
+
+  /**
+   * Generate slug suggestion from name
+   */
+  generateSlugSuggestion(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .substring(0, 50);
+  },
+
+  /**
+   * Create a new tracked link with QR code
+   */
+  async createTrackedLink(
+    link: Omit<TrackedLinkInsert, "id" | "created_at" | "updated_at">
+  ): Promise<TrackedLinkWithQR> {
     const { data, error } = await supabase
       .from("tracked_links")
-      .insert({
-        ...link,
-        organization_id: user.app_metadata.organization_id
-      })
+      .insert(link)
       .select()
       .single();
 
     if (error) throw error;
-    return data as TrackedLink;
+
+    try {
+      const qrUrl = await qrService.generateAndUploadQR({
+        trackedLinkId: data.id,
+        slug: data.slug,
+        activationId: data.activation_id,
+        zoneId: data.zone_id,
+        agentId: data.agent_id
+      });
+
+      return { ...data, qr_url: qrUrl };
+    } catch (qrError) {
+      console.error("QR generation failed:", qrError);
+      return data;
+    }
   },
 
   /**
    * Update a tracked link
    */
-  async updateTrackedLink(id: string, updates: Partial<Omit<TrackedLink, "id" | "created_at" | "updated_at" | "organization_id">>): Promise<TrackedLink> {
+  async updateTrackedLink(
+    id: string,
+    updates: TrackedLinkUpdate
+  ): Promise<TrackedLinkWithQR> {
     const { data, error } = await supabase
       .from("tracked_links")
       .update(updates)
@@ -106,13 +130,46 @@ export const trackedLinkService = {
       .single();
 
     if (error) throw error;
-    return data as TrackedLink;
+
+    if (updates.slug) {
+      try {
+        const qrUrl = await qrService.generateAndUploadQR({
+          trackedLinkId: data.id,
+          slug: data.slug,
+          activationId: data.activation_id,
+          zoneId: data.zone_id,
+          agentId: data.agent_id
+        });
+
+        return { ...data, qr_url: qrUrl };
+      } catch (qrError) {
+        console.error("QR regeneration failed:", qrError);
+        return data;
+      }
+    }
+
+    return data;
   },
 
   /**
    * Delete a tracked link
    */
   async deleteTrackedLink(id: string): Promise<void> {
+    const link = await this.getTrackedLink(id);
+    
+    if (link) {
+      try {
+        await qrService.deleteQR(
+          link.id,
+          link.activation_id,
+          link.zone_id,
+          link.agent_id
+        );
+      } catch (error) {
+        console.error("QR deletion failed:", error);
+      }
+    }
+
     const { error } = await supabase
       .from("tracked_links")
       .delete()
@@ -122,18 +179,30 @@ export const trackedLinkService = {
   },
 
   /**
-   * Generate a unique slug for a new link
+   * Get tracked links by zone
    */
-  async generateSlug(baseName: string): Promise<string> {
-    const baseSlug = baseName.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-");
-    let slug = baseSlug;
-    let counter = 1;
+  async getTrackedLinksByZone(zoneId: string): Promise<TrackedLink[]> {
+    const { data, error } = await supabase
+      .from("tracked_links")
+      .select("*")
+      .eq("zone_id", zoneId)
+      .order("created_at", { ascending: false });
 
-    while (true) {
-      const existing = await this.getTrackedLinkBySlug(slug);
-      if (!existing) return slug;
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
+    if (error) throw error;
+    return data || [];
+  },
+
+  /**
+   * Get tracked links by agent
+   */
+  async getTrackedLinksByAgent(agentId: string): Promise<TrackedLink[]> {
+    const { data, error } = await supabase
+      .from("tracked_links")
+      .select("*")
+      .eq("agent_id", agentId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 };
