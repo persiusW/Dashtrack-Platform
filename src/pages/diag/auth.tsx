@@ -77,7 +77,7 @@ export default function AuthDiagPage() {
                           ? value
                             ? "✅ Yes"
                             : "❌ No"
-                          : value || "null"}
+                          : String(value ?? "null")}
                       </span>
                     </div>
                   ))}
@@ -96,9 +96,9 @@ export default function AuthDiagPage() {
                           ? value
                             ? "✅ Yes"
                             : "❌ No"
-                          : typeof value === "object"
+                          : typeof value === "object" && value !== null
                           ? JSON.stringify(value)
-                          : value || "null"}
+                          : String(value ?? "null")}
                       </span>
                     </div>
                   ))}
