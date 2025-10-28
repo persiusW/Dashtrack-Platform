@@ -90,8 +90,12 @@ export default function UsersPage() {
       const { data: { users: authUserList }, error: authError } = await supabase.auth.admin.listUsers();
       if (authError) throw authError;
 
-      const userEmailTuples: [string, string | undefined][] = authUserList.map(u => [u.id, u.email]);
-      const authUserMap = new Map(userEmailTuples);
+      const authUserMap = new Map<string, string | undefined>();
+      for (const u of authUserList) {
+        if (u.id) {
+            authUserMap.set(u.id, u.email);
+        }
+      }
       
       const combinedUsers = usersData?.map(u => ({
         ...u,
