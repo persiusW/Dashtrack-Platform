@@ -68,9 +68,16 @@ export default function PublicAgentStatsPage() {
         return;
       }
 
+      let dailyStats = [];
+      if (typeof statsData[0].daily_stats === "string") {
+        dailyStats = JSON.parse(statsData[0].daily_stats);
+      } else if (Array.isArray(statsData[0].daily_stats)) {
+        dailyStats = statsData[0].daily_stats;
+      }
+
       const agentStats: AgentStats = {
         ...statsData[0],
-        daily_stats: Array.isArray(statsData[0].daily_stats) ? statsData[0].daily_stats : JSON.parse(statsData[0].daily_stats || "[]")
+        daily_stats: dailyStats
       };
       setStats(agentStats);
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -63,14 +62,25 @@ export function ZoneForm({ zone, activationId, organizationId, onSuccess, onCanc
   const onSubmit = async (data: ZoneFormData) => {
     setLoading(true);
     try {
-      const payload = {
-        ...data,
-        activation_id: activationId,
-      };
       if (zone) {
-        await zoneService.updateZone(zone.id, payload);
+        const updateData = {
+          ...data,
+          lat: data.lat ?? null,
+          lng: data.lng ?? null,
+          address: data.address || null,
+          zone_stand_link_id: data.zone_stand_link_id || null
+        };
+        await zoneService.updateZone(zone.id, updateData);
       } else {
-        await zoneService.createZone(payload);
+        const createData: Omit<Zone, "id" | "created_at" | "updated_at" | "organization_id"> = {
+          activation_id: activationId,
+          name: data.name,
+          address: data.address || null,
+          lat: data.lat ?? null,
+          lng: data.lng ?? null,
+          zone_stand_link_id: data.zone_stand_link_id || null,
+        };
+        await zoneService.createZone(createData);
       }
       onSuccess();
     } catch (error) {

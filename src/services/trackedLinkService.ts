@@ -46,12 +46,12 @@ export const trackedLinkService = {
 
     if (data) {
       try {
-        const qrUrl = await qrService.getQRSignedUrl(
-          data.id,
-          data.activation_id,
-          data.zone_id,
-          data.agent_id
-        );
+        const qrUrl = await qrService.getQRSignedUrl({
+          trackedLinkId: data.id,
+          activationId: data.activation_id,
+          zoneId: data.zone_id,
+          agentId: data.agent_id
+        });
         return { ...data, qr_url: qrUrl };
       } catch {
         return data;
@@ -165,12 +165,12 @@ export const trackedLinkService = {
     
     if (link) {
       try {
-        await qrService.deleteQR(
-          link.id,
-          link.activation_id,
-          link.zone_id,
-          link.agent_id
-        );
+        await qrService.deleteQR({
+          trackedLinkId: link.id,
+          activationId: link.activation_id,
+          zoneId: link.zone_id,
+          agentId: link.agent_id
+        });
       } catch (error) {
         console.error("QR deletion failed:", error);
       }

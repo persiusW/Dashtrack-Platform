@@ -58,7 +58,15 @@ export function ActivationForm({ activation, organizationId, onSuccess, onCancel
       if (activation) {
         await activationService.updateActivation(activation.id, data);
       } else {
-        await activationService.createActivation(data);
+        const createData: Omit<Activation, "id" | "created_at" | "updated_at" | "organization_id"> = {
+          ...data,
+          type: data.type || "single",
+          status: data.status || "draft",
+          start_at: data.start_at || null,
+          end_at: data.end_at || null,
+          description: data.description || null,
+        };
+        await activationService.createActivation(createData);
       }
       onSuccess();
     } catch (error) {

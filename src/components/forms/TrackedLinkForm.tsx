@@ -152,21 +152,20 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
 
       setGeneratingQr(true);
       try {
-        const redirectUrl = `${window.location.origin}/r/${savedLink.slug}`;
-        await qrService.generateAndUploadQR(
-          redirectUrl,
-          savedLink.id,
-          savedLink.activation_id,
-          savedLink.zone_id,
-          savedLink.agent_id
-        );
+        await qrService.generateAndUploadQR({
+          slug: savedLink.slug,
+          trackedLinkId: savedLink.id,
+          activationId: savedLink.activation_id,
+          zoneId: savedLink.zone_id,
+          agentId: savedLink.agent_id
+        });
 
-        const signedUrl = await qrService.getQRSignedUrl(
-          savedLink.id,
-          savedLink.activation_id,
-          savedLink.zone_id,
-          savedLink.agent_id
-        );
+        const signedUrl = await qrService.getQRSignedUrl({
+          trackedLinkId: savedLink.id,
+          activationId: savedLink.activation_id,
+          zoneId: savedLink.zone_id,
+          agentId: savedLink.agent_id
+        });
         setQrUrl(signedUrl);
       } catch (qrError) {
         console.error("Error generating QR:", qrError);

@@ -46,20 +46,14 @@ export function AgentForm({ agent, organizationId, onSuccess, onCancel }: AgentF
   const onSubmit = async (data: AgentFormData) => {
     setLoading(true);
     try {
-      const agentData = {
-        ...data,
-        organization_id: organizationId,
-      };
-
       if (agent) {
-        // For update, name is already present
         await agentService.updateAgent(agent.id, data);
       } else {
-        // For create, ensure name is a string
-        const createData: Omit<Agent, "id" | "created_at" | "updated_at" | "public_stats_token"> = {
+        const createData = {
           ...data,
-          name: data.name || "", // Should be validated by schema, but for TS safety
-          organization_id: organizationId,
+          active: data.active ?? true,
+          phone: data.phone || null,
+          email: data.email || null,
         };
         await agentService.createAgent(createData);
       }
