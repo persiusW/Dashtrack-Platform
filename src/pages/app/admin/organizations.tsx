@@ -1,145 +1,264 @@
 
-import { AppLayout } from "@/components/layouts/AppLayout";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Edit, Users } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { Plus, Building2 } from "lucide-react";
 
-export default function AdminOrganizationsPage() {
-  const organizations = [
-    {
-      id: "1",
-      name: "Acme Corporation",
-      plan: "enterprise",
-      users_count: 45,
-      activations_count: 12,
-      created_at: "2024-01-15",
-    },
-    {
-      id: "2",
-      name: "TechStart Inc",
-      plan: "pro",
-      users_count: 12,
-      activations_count: 5,
-      created_at: "2024-03-22",
-    },
-    {
-      id: "3",
-      name: "Small Business Co",
-      plan: "free",
-      users_count: 3,
-      activations_count: 1,
-      created_at: "2024-06-10",
-    },
-  ];
+interface Organization {
+  id: string;
+  name: string;
+  plan: string;
+  created_at: string;
+}
 
-  const getPlanColor = (plan: string) => {
-    switch (plan) {
-      case "enterprise":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
-      case "pro":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-      case "free":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+export default function OrganizationsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newOrgName, setNewOrgName] = useState("");
+  const [newOrgPlan, setNewOrgPlan] = useState("free");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      checkAdminAccess();
+    }
+  }, [user]);
+
+  const checkAdminAccess = async () => {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user?.id)
+      .single();
+
+    if (userData?.role !== "admin") {
+      toast({
+        title: "Access Denied",
+        description: "You do not have permission to access this page",
+        variant: "destructive",
+      });
+      router.push("/app/overview");
+      return;
+    }
+
+    loadOrganizations();
+  };
+
+  const loadOrganizations = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setOrganizations(data || []);
+    } catch (error) {
+      console.error("Failed to load organizations:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load organizations",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              Organizations
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Admin: Manage all organizations
-            </p>
-          </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Organization
-          </Button>
-        </div>
+  const handleCreateOrg = async () => {
+    if (!newOrgName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Organization name is required",
+        variant: "destructive",
+      });
+      return;
+    }
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Organization Directory</CardTitle>
-            <CardDescription>Search and manage all organizations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-2 mb-4">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search organizations..." className="flex-1" />
-            </div>
+    try {
+      setSubmitting(true);
+      const { error } = await supabase
+        .from("organizations")
+        .insert([{ name: newOrgName, plan: newOrgPlan }]);
 
-            <div className="space-y-3">
-              {organizations.map((org) => (
-                <div
-                  key={org.id}
-                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="font-semibold text-lg">{org.name}</h3>
-                      <Badge className={getPlanColor(org.plan)}>
-                        {org.plan.toUpperCase()}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 mr-1" />
-                        {org.users_count} users
-                      </div>
-                      <div>{org.activations_count} activations</div>
-                      <div>Created: {new Date(org.created_at).toLocaleDateString()}</div>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      if (error) throw error;
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Organizations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">3</div>
-              <p className="text-sm text-muted-foreground mt-1">+1 this month</p>
-            </CardContent>
-          </Card>
+      toast({
+        title: "Success",
+        description: "Organization created successfully",
+      });
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Enterprise Plans</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">1</div>
-              <p className="text-sm text-muted-foreground mt-1">33.3% of total</p>
-            </CardContent>
-          </Card>
+      setIsCreateOpen(false);
+      setNewOrgName("");
+      setNewOrgPlan("free");
+      loadOrganizations();
+    } catch (error) {
+      console.error("Failed to create organization:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create organization",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Free Plans</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">1</div>
-              <p className="text-sm text-muted-foreground mt-1">Conversion opportunity</p>
-            </CardContent>
-          </Card>
+  if (authLoading || !user || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>
-    </AppLayout>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Organizations</h1>
+          <p className="text-muted-foreground mt-1">Manage organizations and their plans</p>
+        </div>
+        <Button onClick={() => setIsCreateOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Organization
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            All Organizations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {organizations.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    No organizations found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                organizations.map((org) => (
+                  <TableRow key={org.id}>
+                    <TableCell className="font-medium">{org.name}</TableCell>
+                    <TableCell>
+                      <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 capitalize">
+                        {org.plan}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(org.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Organization</DialogTitle>
+            <DialogDescription>
+              Add a new organization to the system
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="orgName">Organization Name</Label>
+              <Input
+                id="orgName"
+                value={newOrgName}
+                onChange={(e) => setNewOrgName(e.target.value)}
+                placeholder="Enter organization name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="orgPlan">Plan</Label>
+              <Select value={newOrgPlan} onValueChange={setNewOrgPlan}>
+                <SelectTrigger id="orgPlan">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="basic">Basic</SelectItem>
+                  <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="enterprise">Enterprise</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateOrg} disabled={submitting}>
+              {submitting ? "Creating..." : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
