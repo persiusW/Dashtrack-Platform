@@ -113,8 +113,10 @@ export const clickService = {
       return acc;
     }, {});
 
-    const topReferrers = Object.entries(referrerCounts)
-      .map(([referrer, count]) => ({ referrer, count }))
+    const topReferrers: { referrer: string; count: number }[] = Object.entries(
+      referrerCounts
+    )
+      .map(([referrer, count]) => ({ referrer, count: count as number }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
