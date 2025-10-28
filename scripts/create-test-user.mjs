@@ -2,23 +2,45 @@ import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Read .env.local file
+// Load environment variables from .env.local
 const envPath = path.join(process.cwd(), '.env.local');
-const envContent = fs.readFileSync(envPath, 'utf8');
+console.log('📄 Reading .env.local from:', envPath);
 
-// Parse environment variables
-const env = {};
-envContent.split('\n').forEach(line => {
-  const match = line.match(/^([^=:#]+)=(.*)$/);
-  if (match) {
-    const key = match[1].trim();
-    const value = match[2].trim().replace(/^["']|["']$/g, '');
-    env[key] = value;
+try {
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  const lines = envContent.split('\n');
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('#')) continue;
+    
+    const equalIndex = trimmedLine.indexOf('=');
+    if (equalIndex === -1) continue;
+    
+    const key = trimmedLine.substring(0, equalIndex).trim();
+    const value = trimmedLine.substring(equalIndex + 1).trim();
+    
+    if (key && value && !process.env[key]) {
+      process.env[key] = value;
+      console.log(`✓ Loaded: ${key} (length: ${value.length})`);
+    }
   }
-});
+} catch (error) {
+  console.error('❌ Error reading .env.local:', error.message);
+  process.exit(1);
+}
 
-const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+// Verify the service role key format
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+console.log('🔍 Service Key Details:');
+console.log('  - Length:', serviceKey?.length);
+console.log('  - First 50 chars:', serviceKey?.substring(0, 50));
+console.log('  - Last 20 chars:', serviceKey?.substring(serviceKey.length - 20));
+console.log('  - Contains spaces:', serviceKey?.includes(' '));
+console.log('  - Contains newlines:', serviceKey?.includes('\n'));
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing Supabase credentials in .env.local');
