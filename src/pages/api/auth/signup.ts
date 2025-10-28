@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/integrations/supabase/types";
 
 // Email validation regex - more permissive
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -13,6 +14,29 @@ export default async function handler(
   }
 
   try {
+    // Validate environment variables first
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing Supabase environment variables:", {
+        hasUrl: !!supabaseUrl,
+        hasServiceKey: !!supabaseServiceKey,
+      });
+      return res.status(500).json({
+        error: "Server configuration error",
+        details: "Missing required Supabase credentials. Please contact support.",
+      });
+    }
+
+    // Create admin client inline to ensure fresh credentials
+    const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+
     const { email, password, fullName, organizationName } = req.body;
 
     // Log the incoming request (without password)
@@ -26,14 +50,14 @@ export default async function handler(
 
     // Validate required fields
     if (!email || !password || !fullName || !organizationName) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Missing required fields",
         details: {
           email: !email,
           password: !password,
           fullName: !fullName,
           organizationName: !organizationName,
-        }
+        },
       });
     }
 
@@ -42,19 +66,24 @@ export default async function handler(
     console.log("Trimmed email:", trimmedEmail);
 
     if (!EMAIL_REGEX.test(trimmedEmail)) {
-      return res.status(400).json({ 
-        error: "Invalid email format. Please use a valid email address like user@example.com" 
+      return res.status(400).json({
+        error:
+          "Invalid email format. Please use a valid email address like user@example.com",
       });
     }
 
     // Validate password length and characters
     if (password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
+      return res
+        .status(400)
+        .json({ error: "Password must be at least 6 characters" });
     }
 
     // Check for any whitespace in password that might cause issues
     if (password.trim() !== password) {
-      return res.status(400).json({ error: "Password cannot start or end with whitespace" });
+      return res
+        .status(400)
+        .json({ error: "Password cannot start or end with whitespace" });
     }
 
     // Validate names are not just whitespace
@@ -83,9 +112,9 @@ export default async function handler(
         details: orgError.details,
         hint: orgError.hint,
       });
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: "Failed to create organization",
-        details: orgError.message 
+        details: orgError.message,
       });
     }
 
@@ -93,7 +122,7 @@ export default async function handler(
 
     // Step 2: Create auth user
     console.log("Step 2: Creating auth user with email:", trimmedEmail);
-    
+
     const createUserPayload = {
       email: trimmedEmail,
       password: password,
@@ -109,7 +138,8 @@ export default async function handler(
       user_metadata: createUserPayload.user_metadata,
     });
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser(createUserPayload);
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.admin.createUser(createUserPayload);
 
     if (authError) {
       console.error("Auth user creation error:", {
@@ -118,22 +148,24 @@ export default async function handler(
         code: authError.code,
         name: authError.name,
       });
-      
+
       // Rollback: delete the organization if user creation fails
       console.log("Rolling back organization creation...");
       await supabaseAdmin.from("organizations").delete().eq("id", orgData.id);
-      
+
       // Provide more specific error message
       let errorMessage = authError.message;
       if (authError.message.includes("pattern")) {
-        errorMessage = "Email or password format is invalid. Email must be a valid email address and password must be at least 6 characters.";
+        errorMessage =
+          "Email or password format is invalid. Email must be a valid email address and password must be at least 6 characters.";
       } else if (authError.message.includes("already registered")) {
-        errorMessage = "An account with this email already exists. Please sign in instead.";
+        errorMessage =
+          "An account with this email already exists. Please sign in instead.";
       }
-      
-      return res.status(400).json({ 
+
+      return res.status(400).json({
         error: errorMessage,
-        details: authError.message 
+        details: authError.message,
       });
     }
 
@@ -141,22 +173,22 @@ export default async function handler(
       console.error("No user data returned from auth creation");
       console.log("Rolling back organization creation...");
       await supabaseAdmin.from("organizations").delete().eq("id", orgData.id);
-      return res.status(500).json({ error: "Failed to create user account - no user data returned" });
+      return res
+        .status(500)
+        .json({ error: "Failed to create user account - no user data returned" });
     }
 
     console.log("Auth user created successfully:", authData.user.id);
 
     // Step 3: Create user record in users table (using service role)
     console.log("Step 3: Creating user record in users table...");
-    const { error: userError } = await supabaseAdmin
-      .from("users")
-      .insert([
-        {
-          id: authData.user.id,
-          organization_id: orgData.id,
-          role: "client_manager",
-        },
-      ]);
+    const { error: userError } = await supabaseAdmin.from("users").insert([
+      {
+        id: authData.user.id,
+        organization_id: orgData.id,
+        role: "client_manager",
+      },
+    ]);
 
     if (userError) {
       console.error("User record creation error:", {
@@ -168,9 +200,9 @@ export default async function handler(
       console.log("Rolling back auth user and organization creation...");
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       await supabaseAdmin.from("organizations").delete().eq("id", orgData.id);
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: "Failed to create user record",
-        details: userError.message 
+        details: userError.message,
       });
     }
 
@@ -178,15 +210,13 @@ export default async function handler(
 
     // Step 4: Create profile record (using service role)
     console.log("Step 4: Creating profile record...");
-    const { error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .insert([
-        {
-          id: authData.user.id,
-          email: trimmedEmail,
-          full_name: fullName.trim(),
-        },
-      ]);
+    const { error: profileError } = await supabaseAdmin.from("profiles").insert([
+      {
+        id: authData.user.id,
+        email: trimmedEmail,
+        full_name: fullName.trim(),
+      },
+    ]);
 
     if (profileError) {
       console.error("Profile creation error:", {
@@ -195,7 +225,9 @@ export default async function handler(
       });
       // Note: Profile is less critical, so we don't rollback everything
       // but we should log it for monitoring
-      console.warn("Continuing despite profile creation failure - this is non-critical");
+      console.warn(
+        "Continuing despite profile creation failure - this is non-critical"
+      );
     } else {
       console.log("Profile created successfully");
     }
@@ -213,9 +245,9 @@ export default async function handler(
       stack: error.stack,
       name: error.name,
     });
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: "Internal server error during signup",
-      details: error.message 
+      details: error.message,
     });
   }
 }
