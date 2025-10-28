@@ -1,38 +1,73 @@
-
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  let response = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  });
 
-  const { pathname } = req.nextUrl;
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          req.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: CookieOptions) {
+          req.cookies.set({
+            name,
+            value: "",
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value: "",
+            ...options,
+          });
+        },
+      },
+    }
+  );
 
-  // If user is trying to access app routes without a session, redirect to login
-  if (!session && pathname.startsWith("/app")) {
-    const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set(`next`, pathname);
-    return NextResponse.redirect(redirectUrl);
-  }
+  await supabase.auth.getSession();
 
-  // If user has a session and tries to access login/signup, redirect to overview
-  if (session && (pathname === "/login" || pathname === "/signup")) {
-    return NextResponse.redirect(new URL("/app/overview", req.url));
-  }
-  
-  // If user is authenticated and at /app, redirect to /app/overview
-  if (session && pathname === '/app') {
-    return NextResponse.redirect(new URL('/app/overview', req.url))
-  }
-
-  return res;
+  return response;
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/login", "/signup", "/app"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    "/((?!_next/static|_next/image|favicon.ico).*)",
+  ],
 };
