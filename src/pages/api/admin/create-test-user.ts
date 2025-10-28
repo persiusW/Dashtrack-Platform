@@ -25,7 +25,7 @@ export default async function handler(
   }
 
   try {
-    const orgId = "a0c3c006-af91-413c-8627-cb69a05f93b5";
+    const orgId = "a6335fda-a939-4f6f-a67e-d47587d07f1c"; // Updated to use the newly created org
     const email = "test@example.com";
     const password = "password123";
     const fullName = "Test User";
