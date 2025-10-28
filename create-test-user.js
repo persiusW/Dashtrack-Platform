@@ -8,15 +8,24 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Manually load .env.local
+// Manually load .env.local with proper parsing
 try {
   const envFile = readFileSync(join(__dirname, '.env.local'), 'utf8');
   envFile.split('\n').forEach(line => {
     const trimmed = line.trim();
     if (trimmed && !trimmed.startsWith('#')) {
-      const [key, ...valueParts] = trimmed.split('=');
-      if (key && valueParts.length > 0) {
-        process.env[key.trim()] = valueParts.join('=').trim();
+      const equalIndex = trimmed.indexOf('=');
+      if (equalIndex > 0) {
+        const key = trimmed.substring(0, equalIndex).trim();
+        let value = trimmed.substring(equalIndex + 1).trim();
+        
+        // Remove quotes if present
+        if ((value.startsWith('"') && value.endsWith('"')) || 
+            (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        
+        process.env[key] = value;
       }
     }
   });
@@ -27,6 +36,13 @@ try {
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+console.log('🔍 Environment Check:');
+console.log('URL present:', !!supabaseUrl);
+console.log('Service Key present:', !!supabaseServiceKey);
+console.log('Service Key length:', supabaseServiceKey?.length || 0);
+console.log('Service Key preview:', supabaseServiceKey ? supabaseServiceKey.substring(0, 20) + '...' : 'missing');
+console.log('');
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing environment variables!');
@@ -56,7 +72,15 @@ async function createTestUser() {
     console.log('Step 1: Checking if user already exists...');
     
     // Check if user exists
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (listError) {
+      console.error('❌ Error listing users:', listError);
+      console.log('\nThis usually means the service role key is invalid or has expired.');
+      console.log('Please check your Supabase project settings and update SUPABASE_SERVICE_ROLE_KEY in .env.local');
+      process.exit(1);
+    }
+    
     const existingUser = existingUsers?.users?.find(u => u.email === email);
     
     if (existingUser) {
