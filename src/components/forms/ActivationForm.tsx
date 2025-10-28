@@ -20,11 +20,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { activationService } from "@/services/activationService";
+import { activationService, Activation } from "@/services/activationService";
 import { useState } from "react";
-import { Database } from "@/integrations/supabase/types";
 
-type Activation = Database["public"]["Tables"]["activations"]["Row"];
 type ActivationInsert = Omit<Activation, "id" | "created_at" | "updated_at" | "organization_id">;
 type ActivationStatus = "draft" | "live" | "paused" | "ended";
 type ActivationType = "single" | "multi";
@@ -67,7 +65,7 @@ export function ActivationForm({ activation, onSuccess }: ActivationFormProps) {
     setLoading(true);
     setError(null);
     try {
-      const payload: Omit<Activation, "id" | "created_at" | "updated_at" | "organization_id"> & { start_at?: string, end_at?: string } = {
+      const payload = {
         ...data,
         description: data.description || null,
         start_at: data.start_at ? new Date(data.start_at).toISOString() : null,
@@ -178,7 +176,7 @@ export function ActivationForm({ activation, onSuccess }: ActivationFormProps) {
               <FormItem>
                 <FormLabel>Start Date</FormLabel>
                 <FormControl>
-                  <Input type="datetime-local" {...field} />
+                  <Input type="datetime-local" {...field} value={field.value ?? ''}/>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -191,7 +189,7 @@ export function ActivationForm({ activation, onSuccess }: ActivationFormProps) {
               <FormItem>
                 <FormLabel>End Date</FormLabel>
                 <FormControl>
-                  <Input type="datetime-local" {...field} />
+                  <Input type="datetime-local" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -18,8 +18,8 @@ import { useState } from "react";
 import { Database } from "@/integrations/supabase/types";
 
 type Agent = Database["public"]["Tables"]["agents"]["Row"];
-type AgentUpdatePayload = Omit<Partial<Agent>, "id" | "created_at" | "updated_at" | "organization_id" | "public_stats_token">;
-type AgentInsertPayload = Omit<Agent, "id" | "created_at" | "updated_at" | "organization_id" | "public_stats_token">;
+type AgentInsert = Database["public"]["Tables"]["agents"]["Insert"];
+type AgentUpdate = Database["public"]["Tables"]["agents"]["Update"];
 
 const agentSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -54,14 +54,14 @@ export function AgentForm({ agent, onSuccess }: AgentFormProps) {
     setError(null);
     try {
       if (agent) {
-        const updateData: AgentUpdatePayload = {
+        const updateData: AgentUpdate = {
             ...data,
             phone: data.phone || null,
             email: data.email || null,
         };
         await agentService.updateAgent(agent.id, updateData);
       } else {
-        const insertData: AgentInsertPayload = {
+        const insertData: Omit<AgentInsert, "id" | "created_at" | "updated_at" | "public_stats_token" | "organization_id"> = {
             ...data,
             phone: data.phone || null,
             email: data.email || null,
@@ -102,7 +102,7 @@ export function AgentForm({ agent, onSuccess }: AgentFormProps) {
             <FormItem>
               <FormLabel>Phone</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -116,7 +116,7 @@ export function AgentForm({ agent, onSuccess }: AgentFormProps) {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
