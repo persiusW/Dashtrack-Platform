@@ -22,7 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Users as UsersIcon, Shield } from "lucide-react";
 
-interface User {
+type UserProfile = {
   id: string;
   email: string;
   role: string;
@@ -31,89 +31,67 @@ interface User {
     name: string;
   };
   created_at: string;
-}
+};
 
-export default function UsersPage() {
-  const { user, loading: authLoading } = useAuth();
+export default function AdminUsersPage() {
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/");
-    }
-  }, [user, authLoading, router]);
+    if (!authLoading && user) {
+      const fetchUsers = async () => {
+        try {
+          setIsLoading(true);
+          
+          const { data: usersData, error: usersError } = await supabase
+            .from("users")
+            .select(`
+              id,
+              role,
+              organization_id,
+              created_at,
+              organization:organizations(name)
+            `);
 
-  useEffect(() => {
-    if (user) {
-      checkAdminAccess();
-    }
-  }, [user]);
+          if (usersError) throw usersError;
 
-  const checkAdminAccess = async () => {
-    const { data: userData } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", user?.id)
-      .single();
+          const { data: { users: authUserList }, error: authError } = await supabase.auth.admin.listUsers();
+          if (authError) throw authError;
 
-    if (userData?.role !== "admin") {
-      toast({
-        title: "Access Denied",
-        description: "You do not have permission to access this page",
-        variant: "destructive",
-      });
-      router.push("/app/overview");
-      return;
-    }
+          const authUserMap = new Map<string, string | undefined>();
+          for (const u of authUserList) {
+            if (u.id) {
+                authUserMap.set(u.id, u.email);
+            }
+          }
+          
+          const combinedUsers = usersData?.map(u => ({
+            ...u,
+            email: authUserMap.get(u.id) || "N/A"
+          })) || [];
 
-    loadUsers();
-  };
-
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      
-      const { data: usersData, error: usersError } = await supabase
-        .from("users")
-        .select(`
-          id,
-          role,
-          organization_id,
-          created_at,
-          organization:organizations(name)
-        `);
-
-      if (usersError) throw usersError;
-
-      const { data: { users: authUserList }, error: authError } = await supabase.auth.admin.listUsers();
-      if (authError) throw authError;
-
-      const authUserMap = new Map<string, string | undefined>();
-      for (const u of authUserList) {
-        if (u.id) {
-            authUserMap.set(u.id, u.email);
+          setUsers(combinedUsers as UserProfile[]);
+        } catch (error) {
+          console.error("Failed to load users:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load users",
+            variant: "destructive",
+          });
+          if (error instanceof Error) {
+            setError(error.message);
+          }
+        } finally {
+          setIsLoading(false);
         }
-      }
-      
-      const combinedUsers = usersData?.map(u => ({
-        ...u,
-        email: authUserMap.get(u.id) || "N/A"
-      })) || [];
+      };
 
-      setUsers(combinedUsers as User[]);
-    } catch (error) {
-      console.error("Failed to load users:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load users",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      fetchUsers();
     }
-  };
+  }, [user, authLoading]);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
@@ -153,7 +131,7 @@ export default function UsersPage() {
     }
   };
 
-  if (authLoading || !user || loading) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

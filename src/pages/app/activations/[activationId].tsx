@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
@@ -23,13 +22,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 
-export default function ActivationDetailPage() {
-  const { user, loading: authLoading } = useAuth();
+export default function ActivationDetailsPage() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const { activationId } = router.query;
   const { filters } = useGlobalFilters();
 
-  const [activation, setActivation] = useState<Activation | null>(null);
+  const [activation, setActivation] = useState<any>(null);
   const [kpis, setKpis] = useState<KPIData | null>(null);
   const [timeSeries, setTimeSeries] = useState<TimeSeriesData[]>([]);
   const [zonePerformance, setZonePerformance] = useState<ZonePerformance[]>([]);
@@ -44,37 +43,37 @@ export default function ActivationDetailPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user && activationId) {
-      loadActivationData();
+    const fetchActivation = async () => {
+      if (typeof activationId !== "string") return;
+
+      try {
+        setLoading(true);
+        const [activationData, kpiData, timeSeriesData, zonesData, agentsData, linksData] = await Promise.all([
+          activationService.getActivation(activationId),
+          dashboardService.getActivationKPIs(activationId, filters.dateFrom, filters.dateTo),
+          dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, activationId),
+          dashboardService.getZonePerformance(activationId, filters.dateFrom, filters.dateTo),
+          dashboardService.getAgentPerformance(activationId, filters.dateFrom, filters.dateTo),
+          trackedLinkService.getLinksByActivation(activationId),
+        ]);
+
+        setActivation(activationData);
+        setKpis(kpiData);
+        setTimeSeries(timeSeriesData);
+        setZonePerformance(zonesData);
+        setAgentPerformance(agentsData);
+        setLinks(linksData);
+      } catch (error) {
+        console.error("Failed to load activation data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (activationId) {
+      fetchActivation();
     }
-  }, [user, activationId, filters]);
-
-  const loadActivationData = async () => {
-    if (typeof activationId !== "string") return;
-
-    try {
-      setLoading(true);
-      const [activationData, kpiData, timeSeriesData, zonesData, agentsData, linksData] = await Promise.all([
-        activationService.getActivation(activationId),
-        dashboardService.getActivationKPIs(activationId, filters.dateFrom, filters.dateTo),
-        dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, activationId),
-        dashboardService.getZonePerformance(activationId, filters.dateFrom, filters.dateTo),
-        dashboardService.getAgentPerformance(activationId, filters.dateFrom, filters.dateTo),
-        trackedLinkService.getLinksByActivation(activationId),
-      ]);
-
-      setActivation(activationData);
-      setKpis(kpiData);
-      setTimeSeries(timeSeriesData);
-      setZonePerformance(zonesData);
-      setAgentPerformance(agentsData);
-      setLinks(linksData);
-    } catch (error) {
-      console.error("Failed to load activation data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [activationId, filters]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -104,14 +103,19 @@ export default function ActivationDetailPage() {
     }
   };
 
-  if (authLoading || !user || loading) {
+  if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
+      <AppLayout>
+        <div className="p-8">Loading activation details...</div>
+      </AppLayout>
+    );
+  }
+
+  if (!activation) {
+    return (
+      <AppLayout>
+        <div className="p-8">Activation not found</div>
+      </AppLayout>
     );
   }
 

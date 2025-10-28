@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface KPIData {
@@ -56,6 +55,17 @@ function getCachedData<T>(key: string): T | null {
 
 function setCachedData(key: string, data: any): void {
   cache.set(key, { data, timestamp: Date.now() });
+}
+
+function getMostRecentEntry(
+  entries: { date: string | null }[] | null
+): string | null {
+  if (!entries || entries.length === 0) return null;
+  return entries.reduce((latest, entry) => {
+    if (!entry.date) return latest;
+    if (!latest) return entry.date;
+    return new Date(entry.date) > new Date(latest) ? entry.date : latest;
+  }, entries[0].date);
 }
 
 export const dashboardService = {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,7 +34,8 @@ const trackedLinkSchema = z.object({
   is_active: z.boolean().default(true)
 });
 
-type TrackedLinkFormData = z.infer<typeof trackedLinkSchema>;
+// Adjusted form data type to match what the form uses
+type TrackedLinkFormData = Omit<Tables<"tracked_links">, "id" | "created_at" | "updated_at" | "organization_id">;
 
 interface TrackedLinkFormProps {
   link?: TrackedLink;
@@ -55,27 +55,40 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [generatingQr, setGeneratingQr] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<TrackedLinkFormData>({
+  const form = useForm<TrackedLinkFormData>({
     resolver: zodResolver(trackedLinkSchema),
-    defaultValues: link ? {
-      slug: link.slug,
-      destination_strategy: link.destination_strategy as "single" | "smart",
-      single_url: link.single_url || "",
-      ios_url: link.ios_url || "",
-      android_url: link.android_url || "",
-      fallback_url: link.fallback_url || "",
-      notes: link.notes || "",
-      zone_id: link.zone_id || "",
-      agent_id: link.agent_id || "",
-      is_active: link.is_active
-    } : {
-      destination_strategy: "smart",
-      is_active: true
-    }
+    defaultValues: async () => {
+      if (!link) {
+        return {
+          slug: "",
+          destination_strategy: "smart",
+          single_url: "",
+          ios_url: "",
+          android_url: "",
+          fallback_url: "",
+          notes: "",
+          zone_id: "",
+          agent_id: "",
+          is_active: true,
+          activation_id: activationId,
+        };
+      }
+      return {
+        ...link,
+        is_active: link.is_active ?? true, // Ensure boolean
+        single_url: link.single_url ?? "",
+        ios_url: link.ios_url ?? "",
+        android_url: link.android_url ?? "",
+        fallback_url: link.fallback_url ?? "",
+        notes: link.notes ?? "",
+        zone_id: link.zone_id ?? "",
+        agent_id: link.agent_id ?? "",
+      };
+    },
   });
 
-  const strategy = watch("destination_strategy");
-  const currentSlug = watch("slug");
+  const strategy = form.watch("destination_strategy");
+  const currentSlug = form.watch("slug");
 
   useEffect(() => {
     loadData();
@@ -122,7 +135,7 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
   const generateSlug = () => {
     const baseName = `link-${Date.now()}`;
     const slug = trackedLinkService.generateSlugSuggestion(baseName);
-    setValue("slug", slug);
+    form.setValue("slug", slug);
   };
 
   const onSubmit = async (data: TrackedLinkFormData) => {
@@ -183,13 +196,13 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <Label htmlFor="slug">Slug *</Label>
         <div className="flex gap-2">
           <Input
             id="slug"
-            {...register("slug")}
+            {...form.register("slug")}
             placeholder="my-campaign-link"
             className={slugAvailable === false ? "border-red-500" : slugAvailable === true ? "border-green-500" : ""}
           />
@@ -200,14 +213,14 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
         {checkingSlug && <p className="text-sm text-muted-foreground mt-1">Checking availability...</p>}
         {slugAvailable === false && <p className="text-sm text-red-500 mt-1">Slug is already taken</p>}
         {slugAvailable === true && <p className="text-sm text-green-500 mt-1">Slug is available</p>}
-        {errors.slug && <p className="text-sm text-red-500 mt-1">{errors.slug.message}</p>}
+        {form.formState.errors.slug && <p className="text-sm text-red-500 mt-1">{form.formState.errors.slug.message}</p>}
       </div>
 
       <div>
         <Label htmlFor="destination_strategy">Destination Strategy *</Label>
         <Select
           value={strategy}
-          onValueChange={(value) => setValue("destination_strategy", value as "single" | "smart")}
+          onValueChange={(value) => form.setValue("destination_strategy", value as "single" | "smart")}
         >
           <SelectTrigger>
             <SelectValue />
@@ -222,26 +235,26 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
       {strategy === "single" ? (
         <div>
           <Label htmlFor="single_url">Single URL *</Label>
-          <Input id="single_url" {...register("single_url")} placeholder="https://example.com" />
-          {errors.single_url && <p className="text-sm text-red-500 mt-1">{errors.single_url.message}</p>}
+          <Input id="single_url" {...form.register("single_url")} placeholder="https://example.com" />
+          {form.formState.errors.single_url && <p className="text-sm text-red-500 mt-1">{form.formState.errors.single_url.message}</p>}
         </div>
       ) : (
         <>
           <div>
             <Label htmlFor="ios_url">iOS URL</Label>
-            <Input id="ios_url" {...register("ios_url")} placeholder="https://apps.apple.com/..." />
+            <Input id="ios_url" {...form.register("ios_url")} placeholder="https://apps.apple.com/..." />
           </div>
 
           <div>
             <Label htmlFor="android_url">Android URL</Label>
-            <Input id="android_url" {...register("android_url")} placeholder="https://play.google.com/..." />
+            <Input id="android_url" {...form.register("android_url")} placeholder="https://play.google.com/..." />
           </div>
 
           <div>
             <Label htmlFor="fallback_url">Fallback URL</Label>
             <Input
               id="fallback_url"
-              {...register("fallback_url")}
+              {...form.register("fallback_url")}
               placeholder={activation?.default_landing_url || "https://example.com"}
             />
             <p className="text-xs text-muted-foreground mt-1">
@@ -255,8 +268,8 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
         <div>
           <Label htmlFor="zone_id">Zone (Optional)</Label>
           <Select
-            value={watch("zone_id") || ""}
-            onValueChange={(value) => setValue("zone_id", value || undefined)}
+            value={form.watch("zone_id") || ""}
+            onValueChange={(value) => form.setValue("zone_id", value || undefined)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select zone" />
@@ -275,8 +288,8 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
         <div>
           <Label htmlFor="agent_id">Agent (Optional)</Label>
           <Select
-            value={watch("agent_id") || ""}
-            onValueChange={(value) => setValue("agent_id", value || undefined)}
+            value={form.watch("agent_id") || ""}
+            onValueChange={(value) => form.setValue("agent_id", value || undefined)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select agent" />
@@ -295,15 +308,15 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
 
       <div>
         <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" {...register("notes")} placeholder="Internal notes..." rows={3} />
+        <Textarea id="notes" {...form.register("notes")} placeholder="Internal notes..." rows={3} />
       </div>
 
       <div className="flex items-center justify-between">
         <Label htmlFor="is_active">Active</Label>
         <Switch
           id="is_active"
-          checked={watch("is_active")}
-          onCheckedChange={(checked) => setValue("is_active", checked)}
+          checked={form.watch("is_active")}
+          onCheckedChange={(checked) => form.setValue("is_active", checked)}
         />
       </div>
 

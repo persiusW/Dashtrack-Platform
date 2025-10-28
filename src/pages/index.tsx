@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
@@ -6,16 +5,16 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 export default function HomePage() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (user && !loading) {
-      router.push("/app/overview");
+    if (!isLoading && user) {
+      router.replace("/app/overview");
     }
-  }, [user, loading, router]);
+  }, [user, isLoading, router]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100" />
@@ -24,18 +23,14 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-      <div className="absolute top-4 right-4">
-        <ThemeSwitch />
-      </div>
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <div className="mb-8 text-center">
-          <div className="inline-block w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4" />
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
             DashTrack
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Multi-tenant SaaS platform for tracking and analytics
+          <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
+            Welcome! Sign in to continue.
           </p>
         </div>
         <LoginForm />

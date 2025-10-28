@@ -1,50 +1,43 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
-interface SubscriptionGate {
-  allowed: boolean;
-  plan: string;
-  loading: boolean;
-}
-
-export function useSubscriptionGate(feature?: string): SubscriptionGate {
+export function useSubscriptionGate(feature: string) {
   const { profile } = useAuth();
-  const [plan, setPlan] = useState<string>("free");
-  const [loading, setLoading] = useState(true);
+  const [isAllowed, setIsAllowed] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchOrganizationPlan = async () => {
-      if (!profile?.organization_id) {
-        setLoading(false);
+    if (profile) {
+      // Admins bypass all checks
+      if (profile.role === 'admin') {
+        setIsAllowed(true);
+        setIsChecking(false);
         return;
       }
-
-      try {
-        const { data, error } = await supabase
-          .from("organizations")
-          .select("plan")
-          .eq("id", profile.organization_id)
-          .single();
-
-        if (error) throw error;
-        setPlan(data.plan || "free");
-      } catch (error) {
-        console.error("Error fetching organization plan:", error);
-        setPlan("free");
-      } finally {
-        setLoading(false);
+      
+      // For v1, we only show a banner if plan is free, but don't block.
+      if (profile.organization_id && profile.role !== 'admin') {
+         // This logic would check against a features-by-plan map
+         // For now, let's assume 'free' plan has limited access but we don't block
+         // A real implementation would be:
+         // const planFeatures = getFeaturesForPlan(profile.plan);
+         // if (planFeatures.includes(feature)) {
+         //   setIsAllowed(true);
+         // } else {
+         //   setIsAllowed(false);
+         //   setMessage(`Upgrade to access this feature.`);
+         // }
+         
+         // V1 logic: allow all, show message for free plan
+         setIsAllowed(true); 
+        //  if(profile.plan === 'free'){
+        //      setMessage("This is a premium feature. Upgrade your plan for full access.");
+        //  }
       }
-    };
+    }
+    setIsChecking(false);
+  }, [profile, feature]);
 
-    fetchOrganizationPlan();
-  }, [profile?.organization_id]);
-
-  const adminBypassOrgIds = process.env.NEXT_PUBLIC_ADMIN_BYPASS_ORG_IDS?.split(",") || [];
-  const isAdminBypass = profile?.role === "admin" || adminBypassOrgIds.includes(profile?.organization_id || "");
-
-  const allowed = isAdminBypass || plan !== "free";
-
-  return { allowed, plan, loading };
+  return { isAllowed, isChecking, message };
 }

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
@@ -19,13 +18,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
-export default function ZoneDetailPage() {
-  const { user, loading: authLoading } = useAuth();
+export default function ZoneDetailsPage() {
   const router = useRouter();
-  const { activationId, zoneId } = router.query;
+  const { user, isLoading: authLoading } = useAuth();
+  const { zoneId } = router.query;
   const { filters } = useGlobalFilters();
 
-  const [zone, setZone] = useState<Zone | null>(null);
+  const [zone, setZone] = useState<any>(null);
   const [kpis, setKpis] = useState<KPIData | null>(null);
   const [timeSeries, setTimeSeries] = useState<TimeSeriesData[]>([]);
   const [agentLeaderboard, setAgentLeaderboard] = useState<AgentPerformance[]>([]);
@@ -42,51 +41,56 @@ export default function ZoneDetailPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user && zoneId) {
-      loadZoneData();
-    }
-  }, [user, zoneId, filters]);
+    const fetchZone = async () => {
+      if (typeof zoneId !== "string") return;
 
-  const loadZoneData = async () => {
-    if (typeof zoneId !== "string" || typeof activationId !== "string") return;
+      try {
+        setLoading(true);
+        const [zoneData, kpiData, timeSeriesData, agentsData] = await Promise.all([
+          zoneService.getZone(zoneId),
+          dashboardService.getZoneKPIs(zoneId, filters.dateFrom, filters.dateTo),
+          dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, activationId, zoneId),
+          dashboardService.getZoneAgentLeaderboard(zoneId, filters.dateFrom, filters.dateTo),
+        ]);
 
-    try {
-      setLoading(true);
-      const [zoneData, kpiData, timeSeriesData, agentsData] = await Promise.all([
-        zoneService.getZone(zoneId),
-        dashboardService.getZoneKPIs(zoneId, filters.dateFrom, filters.dateTo),
-        dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, activationId, zoneId),
-        dashboardService.getZoneAgentLeaderboard(zoneId, filters.dateFrom, filters.dateTo),
-      ]);
+        setZone(zoneData);
+        setKpis(kpiData);
+        setTimeSeries(timeSeriesData);
+        setAgentLeaderboard(agentsData);
 
-      setZone(zoneData);
-      setKpis(kpiData);
-      setTimeSeries(timeSeriesData);
-      setAgentLeaderboard(agentsData);
-
-      if (zoneData.zone_stand_link_id) {
-        const standPerf = await dashboardService.getZoneStandLinkPerformance(
-          zoneId,
-          filters.dateFrom,
-          filters.dateTo
-        );
-        setStandLinkPerformance(standPerf);
+        if (zoneData.zone_stand_link_id) {
+          const standPerf = await dashboardService.getZoneStandLinkPerformance(
+            zoneId,
+            filters.dateFrom,
+            filters.dateTo
+          );
+          setStandLinkPerformance(standPerf);
+        }
+      } catch (error) {
+        console.error("Failed to load zone data:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to load zone data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  if (authLoading || !user || loading) {
+    if (zoneId) {
+      fetchZone();
+    }
+  }, [zoneId, filters]);
+
+  if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
+      <AppLayout>
+        <div className="p-8">Loading zone details...</div>
+      </AppLayout>
+    );
+  }
+
+  if (!zone) {
+    return (
+      <AppLayout>
+        <div className="p-8">Zone not found</div>
+      </AppLayout>
     );
   }
 
