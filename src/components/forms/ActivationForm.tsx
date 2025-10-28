@@ -16,10 +16,10 @@ type Activation = Database["public"]["Tables"]["activations"]["Row"];
 const activationSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
-  type: z.enum(["single", "multi"]).default("single"),
+  type: z.string().default("single"),
   start_at: z.string().optional(),
   end_at: z.string().optional(),
-  status: z.enum(["draft", "live", "paused", "ended"]).default("draft"),
+  status: z.string().default("draft"),
   default_landing_url: z.string().url("Must be a valid URL")
 });
 
@@ -59,12 +59,13 @@ export function ActivationForm({ activation, organizationId, onSuccess, onCancel
         await activationService.updateActivation(activation.id, data);
       } else {
         const createData: Omit<Activation, "id" | "created_at" | "updated_at" | "organization_id"> = {
-          ...data,
-          type: data.type || "single",
-          status: data.status || "draft",
+          name: data.name,
+          description: data.description || null,
+          type: data.type,
           start_at: data.start_at || null,
           end_at: data.end_at || null,
-          description: data.description || null,
+          status: data.status,
+          default_landing_url: data.default_landing_url,
         };
         await activationService.createActivation(createData);
       }

@@ -49,13 +49,7 @@ export function AgentForm({ agent, organizationId, onSuccess, onCancel }: AgentF
       if (agent) {
         await agentService.updateAgent(agent.id, data);
       } else {
-        const createData = {
-          ...data,
-          active: data.active ?? true,
-          phone: data.phone || null,
-          email: data.email || null,
-        };
-        await agentService.createAgent(createData);
+        await agentService.createAgent(data);
       }
       onSuccess();
     } catch (error) {

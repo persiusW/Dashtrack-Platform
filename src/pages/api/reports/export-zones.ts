@@ -33,7 +33,7 @@ export default async function handler(
         uniques,
         tracked_links!inner (
           zone_id,
-          zones (
+          zones!tracked_links_zone_id_fkey (
             name
           )
         )
