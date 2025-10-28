@@ -7,12 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 type AuthMode = "signin" | "signup";
 
 export function LoginForm() {
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
@@ -55,22 +54,35 @@ export function LoginForm() {
       return;
     }
 
+    if (!fullName.trim() || !organizationName.trim()) {
+      setError("Please fill in all fields");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Create organization first
-      const { data: orgData, error: orgError } = await supabase
-        .from("organizations")
-        .insert([{ name: organizationName, plan: "free" }])
-        .select()
-        .single();
+      // Call our API route to handle signup with service role
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          organizationName,
+        }),
+      });
 
-      if (orgError) throw orgError;
+      const data = await response.json();
 
-      // Sign up user with organization_id
-      await signUp(email, password, orgData.id, "client_manager");
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create account");
+      }
 
-      setSuccess("Account created successfully! Please check your email to verify your account.");
+      setSuccess("Account created successfully! You can now sign in.");
       
       // Clear form
       setEmail("");
