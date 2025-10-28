@@ -24,18 +24,19 @@ type Activation = Database["public"]["Tables"]["activations"]["Row"];
 const trackedLinkSchema = z.object({
   slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
   destination_strategy: z.enum(["single", "smart"]).default("smart"),
-  single_url: z.string().optional().nullable(),
-  ios_url: z.string().optional().nullable(),
-  android_url: z.string().optional().nullable(),
-  fallback_url: z.string().optional().nullable(),
-  notes: z.string().optional().nullable(),
-  zone_id: z.string().optional().nullable(),
-  agent_id: z.string().optional().nullable(),
-  is_active: z.boolean().default(true).nullable(),
+  single_url: z.string().url().nullish(),
+  ios_url: z.string().url().nullish(),
+  android_url: z.string().url().nullish(),
+  fallback_url: z.string().url().nullish(),
+  notes: z.string().nullish(),
+  zone_id: z.string().uuid().nullish(),
+  agent_id: z.string().uuid().nullish(),
+  is_active: z.boolean().nullish(),
+  activation_id: z.string().uuid(),
 });
 
 // Adjusted form data type to match what the form uses
-type TrackedLinkFormData = Omit<Tables<"tracked_links">, "id" | "created_at" | "updated_at" | "organization_id">;
+type TrackedLinkFormData = z.infer<typeof trackedLinkSchema>;
 
 interface TrackedLinkFormProps {
   link?: TrackedLink;
