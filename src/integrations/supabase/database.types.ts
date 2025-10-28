@@ -637,14 +637,17 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_manager: { Args: never; Returns: boolean }
       public_agent_stats: {
-        Args: { p_from_date?: string; p_to_date?: string; p_token: string }
+        Args: {
+          p_from_date?: string
+          p_public_stats_token: string
+          p_to_date?: string
+        }
         Returns: {
           agent_id: string
           agent_name: string
-          daily_data: Json
-          public_link: string
+          daily_stats: Json
           total_clicks: number
-          valid_clicks: number
+          total_valid_clicks: number
         }[]
       }
       recompute_daily_metrics: { Args: never; Returns: undefined }

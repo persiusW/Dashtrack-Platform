@@ -204,5 +204,24 @@ export const trackedLinkService = {
 
     if (error) throw error;
     return data || [];
+  },
+
+  /**
+   * Get tracked link by slug (for redirect endpoint)
+   */
+  async getTrackedLinkBySlug(slug: string): Promise<TrackedLink | null> {
+    const { data, error } = await supabase
+      .from("tracked_links")
+      .select("*")
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw error;
+    }
+
+    return data;
   }
 };
