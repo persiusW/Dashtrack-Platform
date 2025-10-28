@@ -1,11 +1,10 @@
 
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -22,11 +21,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { activationService } from "@/services/activationService";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Database } from "@/integrations/supabase/types";
 
 type Activation = Database["public"]["Tables"]["activations"]["Row"];
-type ActivationInsert = Omit&lt;Activation, "id" | "created_at" | "updated_at" | "organization_id"&gt;;
+type ActivationInsert = Omit<Activation, "id" | "created_at" | "updated_at" | "organization_id">;
 
 const activationSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -38,7 +37,7 @@ const activationSchema = z.object({
   default_landing_url: z.string().url("Must be a valid URL"),
 });
 
-type ActivationFormData = z.infer&lt;typeof activationSchema&gt;;
+type ActivationFormData = z.infer<typeof activationSchema>;
 
 interface ActivationFormProps {
   activation?: Activation | null;
@@ -47,22 +46,20 @@ interface ActivationFormProps {
 
 export function ActivationForm({ activation, onSuccess }: ActivationFormProps) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState&lt;string | null&gt;(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const form = useForm&lt;ActivationFormData&gt;({
+  const form = useForm<ActivationFormData>({
     resolver: zodResolver(activationSchema),
     defaultValues: {
       name: activation?.name || "",
       description: activation?.description || "",
-      type: activation?.type || "single",
+      type: (activation?.type as "single" | "multi") || "single",
       start_at: activation?.start_at ? new Date(activation.start_at).toISOString().substring(0, 16) : "",
       end_at: activation?.end_at ? new Date(activation.end_at).toISOString().substring(0, 16) : "",
-      status: activation?.status || "draft",
+      status: (activation?.status as "draft" | "live" | "paused" | "ended") || "draft",
       default_landing_url: activation?.default_landing_url || "",
     },
   });
-
-  const { watch, setValue } = form;
 
   const onSubmit = async (data: ActivationFormData) => {
     setLoading(true);
@@ -98,132 +95,132 @@ export function ActivationForm({ activation, onSuccess }: ActivationFormProps) {
   };
 
   return (
-    &lt;Form {...form}&gt;
-      &lt;form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4"&gt;
-        {error && &lt;div className="text-red-500"&gt;{error}&lt;/div&gt;}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {error && <div className="text-red-500">{error}</div>}
 
-        &lt;FormField
+        <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
-            &lt;FormItem&gt;
-              &lt;FormLabel&gt;Name *&lt;/FormLabel&gt;
-              &lt;FormControl&gt;
-                &lt;Input {...field} /&gt;
-              &lt;/FormControl&gt;
-              &lt;FormMessage /&gt;
-            &lt;/FormItem&gt;
+            <FormItem>
+              <FormLabel>Name *</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        /&gt;
+        />
         
-        &lt;FormField
+        <FormField
           control={form.control}
           name="description"
           render={({ field }) => (
-            &lt;FormItem&gt;
-              &lt;FormLabel&gt;Description&lt;/FormLabel&gt;
-              &lt;FormControl&gt;
-                &lt;Textarea {...field} /&gt;
-              &lt;/FormControl&gt;
-              &lt;FormMessage /&gt;
-            &lt;/FormItem&gt;
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        /&gt;
+        />
 
-        &lt;div className="grid grid-cols-1 md:grid-cols-2 gap-4"&gt;
-          &lt;FormField
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
             control={form.control}
             name="type"
             render={({ field }) => (
-              &lt;FormItem&gt;
-                &lt;FormLabel&gt;Type *&lt;/FormLabel&gt;
-                &lt;Select onValueChange={field.onChange} defaultValue={field.value}&gt;
-                  &lt;FormControl&gt;
-                    &lt;SelectTrigger&gt;
-                      &lt;SelectValue /&gt;
-                    &lt;/SelectTrigger&gt;
-                  &lt;/FormControl&gt;
-                  &lt;SelectContent&gt;
-                    &lt;SelectItem value="single"&gt;Single&lt;/SelectItem&gt;
-                    &lt;SelectItem value="multi"&gt;Multi&lt;/SelectItem&gt;
-                  &lt;/SelectContent&gt;
-                &lt;/Select&gt;
-                &lt;FormMessage /&gt;
-              &lt;/FormItem&gt;
+              <FormItem>
+                <FormLabel>Type *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="single">Single</SelectItem>
+                    <SelectItem value="multi">Multi</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
             )}
-          /&gt;
-          &lt;FormField
+          />
+          <FormField
             control={form.control}
             name="status"
             render={({ field }) => (
-              &lt;FormItem&gt;
-                &lt;FormLabel&gt;Status *&lt;/FormLabel&gt;
-                &lt;Select onValueChange={field.onChange} defaultValue={field.value}&gt;
-                  &lt;FormControl&gt;
-                    &lt;SelectTrigger&gt;
-                      &lt;SelectValue /&gt;
-                    &lt;/SelectTrigger&gt;
-                  &lt;/FormControl&gt;
-                  &lt;SelectContent&gt;
-                    &lt;SelectItem value="draft"&gt;Draft&lt;/SelectItem&gt;
-                    &lt;SelectItem value="live"&gt;Live&lt;/SelectItem&gt;
-                    &lt;SelectItem value="paused"&gt;Paused&lt;/SelectItem&gt;
-                    &lt;SelectItem value="ended"&gt;Ended&lt;/SelectItem&gt;
-                  &lt;/SelectContent&gt;
-                &lt;/Select&gt;
-                &lt;FormMessage /&gt;
-              &lt;/FormItem&gt;
+              <FormItem>
+                <FormLabel>Status *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="live">Live</SelectItem>
+                    <SelectItem value="paused">Paused</SelectItem>
+                    <SelectItem value="ended">Ended</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
             )}
-          /&gt;
-        &lt;/div&gt;
+          />
+        </div>
 
-        &lt;div className="grid grid-cols-1 md:grid-cols-2 gap-4"&gt;
-          &lt;FormField
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
             control={form.control}
             name="start_at"
             render={({ field }) => (
-              &lt;FormItem&gt;
-                &lt;FormLabel&gt;Start Date&lt;/FormLabel&gt;
-                &lt;FormControl&gt;
-                  &lt;Input type="datetime-local" {...field} /&gt;
-                &lt;/FormControl&gt;
-                &lt;FormMessage /&gt;
-              &lt;/FormItem&gt;
+              <FormItem>
+                <FormLabel>Start Date</FormLabel>
+                <FormControl>
+                  <Input type="datetime-local" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          /&gt;
-          &lt;FormField
+          />
+          <FormField
             control={form.control}
             name="end_at"
             render={({ field }) => (
-              &lt;FormItem&gt;
-                &lt;FormLabel&gt;End Date&lt;/FormLabel&gt;
-                &lt;FormControl&gt;
-                  &lt;Input type="datetime-local" {...field} /&gt;
-                &lt;/FormControl&gt;
-                &lt;FormMessage /&gt;
-              &lt;/FormItem&gt;
+              <FormItem>
+                <FormLabel>End Date</FormLabel>
+                <FormControl>
+                  <Input type="datetime-local" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          /&gt;
-        &lt;/div&gt;
+          />
+        </div>
         
-        &lt;FormField
+        <FormField
           control={form.control}
           name="default_landing_url"
           render={({ field }) => (
-            &lt;FormItem&gt;
-              &lt;FormLabel&gt;Default Landing URL *&lt;/FormLabel&gt;
-              &lt;FormControl&gt;
-                &lt;Input {...field} /&gt;
-              &lt;/FormControl&gt;
-              &lt;FormMessage /&gt;
-            &lt;/FormItem&gt;
+            <FormItem>
+              <FormLabel>Default Landing URL *</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        /&gt;
+        />
 
-        &lt;Button type="submit" disabled={loading}&gt;
+        <Button type="submit" disabled={loading}>
           {loading ? "Saving..." : "Save Activation"}
-        &lt;/Button&gt;
-      &lt;/form&gt;
-    &lt;/Form&gt;
+        </Button>
+      </form>
+    </Form>
   );
 }
