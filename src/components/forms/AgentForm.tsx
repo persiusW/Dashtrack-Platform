@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -7,44 +6,51 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { agentService } from "@/services/agentService";
-import type { Database } from "@/integrations/supabase/types";
+import { useState, useEffect } from "react";
+import { Database } from "@/integrations/supabase/types";
 
 type Agent = Database["public"]["Tables"]["agents"]["Row"];
 
 const agentSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  phone: z.string().optional(),
+  phone: z.string().optional().or(z.literal("")),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
-  active: z.boolean().default(true)
+  active: z.boolean().default(true),
 });
 
 type AgentFormData = z.infer<typeof agentSchema>;
 
 interface AgentFormProps {
-  agent?: Agent;
-  organizationId: string;
+  agent?: Agent | null;
   onSuccess: () => void;
-  onCancel: () => void;
 }
 
-export function AgentForm({ agent, organizationId, onSuccess, onCancel }: AgentFormProps) {
+export function AgentForm({ agent, onSuccess }: AgentFormProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState&lt;string | null&gt;(null);
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<AgentFormData>({
+  const form = useForm&lt;AgentFormData&gt;({
     resolver: zodResolver(agentSchema),
-    defaultValues: agent ? {
-      name: agent.name,
-      phone: agent.phone || "",
-      email: agent.email || "",
-      active: agent.active
-    } : {
-      active: true
-    }
+    defaultValues: {
+      name: agent?.name || "",
+      phone: agent?.phone || "",
+      email: agent?.email || "",
+      active: agent?.active ?? true,
+    },
   });
 
   const onSubmit = async (data: AgentFormData) => {
     setLoading(true);
+    setError(null);
     try {
       if (agent) {
         await agentService.updateAgent(agent.id, data);
@@ -52,58 +58,82 @@ export function AgentForm({ agent, organizationId, onSuccess, onCancel }: AgentF
         await agentService.createAgent(data);
       }
       onSuccess();
-    } catch (error) {
-      console.error("Error saving agent:", error);
-      alert("Failed to save agent");
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div>
-        <Label htmlFor="name">Agent Name *</Label>
-        <Input id="name" {...register("name")} placeholder="John Doe" />
-        {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>}
-      </div>
+    &lt;Form {...form}&gt;
+      &lt;form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4"&gt;
+        {error && &lt;div className="text-red-500"&gt;{error}&lt;/div&gt;}
+        
+        &lt;FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            &lt;FormItem&gt;
+              &lt;FormLabel&gt;Name *&lt;/FormLabel&gt;
+              &lt;FormControl&gt;
+                &lt;Input {...field} /&gt;
+              &lt;/FormControl&gt;
+              &lt;FormMessage /&gt;
+            &lt;/FormItem&gt;
+          )}
+        /&gt;
 
-      <div>
-        <Label htmlFor="phone">Phone</Label>
-        <Input id="phone" {...register("phone")} placeholder="+1 234 567 8900" />
-        {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone.message}</p>}
-      </div>
+        &lt;FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            &lt;FormItem&gt;
+              &lt;FormLabel&gt;Phone&lt;/FormLabel&gt;
+              &lt;FormControl&gt;
+                &lt;Input {...field} /&gt;
+              &lt;/FormControl&gt;
+              &lt;FormMessage /&gt;
+            &lt;/FormItem&gt;
+          )}
+        /&gt;
 
-      <div>
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" {...register("email")} placeholder="agent@example.com" />
-        {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>}
-      </div>
+        &lt;FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            &lt;FormItem&gt;
+              &lt;FormLabel&gt;Email&lt;/FormLabel&gt;
+              &lt;FormControl&gt;
+                &lt;Input {...field} /&gt;
+              &lt;/FormControl&gt;
+              &lt;FormMessage /&gt;
+            &lt;/FormItem&gt;
+          )}
+        /&gt;
+        
+        &lt;FormField
+            control={form.control}
+            name="active"
+            render={({ field }) => (
+                &lt;FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"&gt;
+                    &lt;div className="space-y-0.5"&gt;
+                        &lt;FormLabel&gt;Active&lt;/FormLabel&gt;
+                    &lt;/div&gt;
+                    &lt;FormControl&gt;
+                        &lt;Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                        /&gt;
+                    &lt;/FormControl&gt;
+                &lt;/FormItem&gt;
+            )}
+        /&gt;
 
-      <div className="flex items-center justify-between">
-        <Label htmlFor="active">Active</Label>
-        <Switch
-          id="active"
-          checked={watch("active")}
-          onCheckedChange={(checked) => setValue("active", checked)}
-        />
-      </div>
-
-      {agent && (
-        <div className="bg-muted p-3 rounded-md">
-          <p className="text-sm text-muted-foreground mb-1">Public Stats Token</p>
-          <code className="text-xs bg-background px-2 py-1 rounded">{agent.public_stats_token}</code>
-        </div>
-      )}
-
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? "Saving..." : agent ? "Update" : "Create"}
-        </Button>
-      </div>
-    </form>
+        &lt;Button type="submit" disabled={loading}&gt;
+          {loading ? "Saving..." : "Save Agent"}
+        &lt;/Button&gt;
+      &lt;/form&gt;
+    &lt;/Form&gt;
   );
 }
