@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 const signupSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -18,7 +18,23 @@ export default async function handler(
   }
 
   try {
-    const supabase = createServerClient({ req, res });
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return req.cookies[name];
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            res.appendHeader("Set-Cookie", serializeCookie(name, value, options));
+          },
+          remove(name: string, options: CookieOptions) {
+            res.appendHeader("Set-Cookie", serializeCookie(name, "", options));
+          },
+        },
+      }
+    );
     
     const parsed = signupSchema.safeParse(req.body);
     
@@ -30,7 +46,6 @@ export default async function handler(
 
     const { email, password, fullName } = parsed.data;
 
-    // Sign up the user with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -66,4 +81,25 @@ export default async function handler(
       { ok: false, error: "Internal server error" }
     );
   }
+}
+
+function serializeCookie(name: string, value: string, options: CookieOptions) {
+  const stringValue =
+    typeof value === 'object' ? 'j:' + JSON.stringify(value) : String(value);
+
+  if ('maxAge' in options) {
+    options.expires = new Date(Date.now() + options.maxAge * 1000);
+  }
+
+  return [
+    name + '=' + encodeURIComponent(stringValue),
+    options.expires ? 'Expires=' + options.expires.toUTCString() : '',
+    options.path ? 'Path=' + options.path : '',
+    options.domain ? 'Domain=' + options.domain : '',
+    options.sameSite ? 'SameSite=' + options.sameSite : '',
+    options.secure ? 'Secure' : '',
+    options.httpOnly ? 'HttpOnly' : '',
+  ]
+    .filter(Boolean)
+    .join('; ');
 }

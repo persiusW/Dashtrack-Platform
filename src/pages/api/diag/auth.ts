@@ -1,4 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
@@ -10,7 +10,23 @@ export default async function handler(
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  const supabase = createServerClient({ req, res });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies[name];
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          res.appendHeader("Set-Cookie", serializeCookie(name, value, options));
+        },
+        remove(name: string, options: CookieOptions) {
+          res.appendHeader("Set-Cookie", serializeCookie(name, "", options));
+        },
+      },
+    }
+  );
 
   const env = {
     NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -22,16 +38,13 @@ export default async function handler(
   const { data: sessionData } = await supabase.auth.getSession();
   const { data: userData } = await supabase.auth.getUser();
 
-  // Call whoami() function
   const { data: whoami, error: whoamiErr } = await supabase.rpc("whoami");
 
-  // Test basic read access
   const { error: readErr } = await supabase
     .from("organizations")
     .select("id")
     .limit(1);
 
-  // If authenticated, get user's organization info
   let userOrgInfo = null;
   if (userData?.user) {
     const { data: userRecord } = await supabase
@@ -59,4 +72,26 @@ export default async function handler(
       "sb-refresh-token": !!req.cookies["sb-refresh-token"],
     }
   });
+}
+
+// Helper from @supabase/ssr
+function serializeCookie(name: string, value: string, options: CookieOptions) {
+  const stringValue =
+    typeof value === 'object' ? 'j:' + JSON.stringify(value) : String(value);
+
+  if ('maxAge' in options) {
+    options.expires = new Date(Date.now() + options.maxAge * 1000);
+  }
+
+  return [
+    name + '=' + encodeURIComponent(stringValue),
+    options.expires ? 'Expires=' + options.expires.toUTCString() : '',
+    options.path ? 'Path=' + options.path : '',
+    options.domain ? 'Domain=' + options.domain : '',
+    options.sameSite ? 'SameSite=' + options.sameSite : '',
+    options.secure ? 'Secure' : '',
+    options.httpOnly ? 'HttpOnly' : '',
+  ]
+    .filter(Boolean)
+    .join('; ');
 }
