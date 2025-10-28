@@ -65,13 +65,19 @@ export const trackedLinkService = {
    * Check if slug is available
    */
   async checkSlugAvailable(slug: string, excludeId?: string): Promise<boolean> {
-    const { data, error } = await supabase.rpc("check_slug_available", {
-      p_slug: slug,
-      p_exclude_id: excludeId || null
-    });
+    let query = supabase
+      .from("tracked_links")
+      .select("id")
+      .eq("slug", slug);
+
+    if (excludeId) {
+      query = query.neq("id", excludeId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
-    return data as boolean;
+    return !data || data.length === 0;
   },
 
   /**

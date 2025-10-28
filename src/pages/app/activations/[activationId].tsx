@@ -1,11 +1,10 @@
-
 import { AppLayout } from "@/components/layouts/AppLayout";
 import { useRouter } from "next/router";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Link2, BarChart3, Edit } from "lucide-react";
+import { Calendar, MapPin, Users, Link2, BarChart3, Edit, Download } from "lucide-react";
 
 export default function ActivationDetailPage() {
   const router = useRouter();
@@ -31,6 +30,24 @@ export default function ActivationDetailPage() {
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
     }
+  };
+
+  const handleExportZones = () => {
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - 7);
+    const toDate = new Date();
+    
+    const url = `/api/reports/export-zones?activationId=${activationId}&fromDate=${fromDate.toISOString().split("T")[0]}&toDate=${toDate.toISOString().split("T")[0]}`;
+    window.open(url, "_blank");
+  };
+
+  const handleExportAgents = () => {
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - 7);
+    const toDate = new Date();
+    
+    const url = `/api/reports/export-agents?activationId=${activationId}&fromDate=${fromDate.toISOString().split("T")[0]}&toDate=${toDate.toISOString().split("T")[0]}`;
+    window.open(url, "_blank");
   };
 
   return (
@@ -188,10 +205,39 @@ export default function ActivationDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Reports</CardTitle>
-                <CardDescription>Analytics and performance reports</CardDescription>
+                <CardDescription>Export analytics and performance reports</CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Reports interface placeholder</p>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-semibold mb-2">Zone Performance Report</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Export daily metrics grouped by zone including clicks, uniques, and valid clicks.
+                    </p>
+                    <Button onClick={handleExportZones} className="w-full">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Zones CSV
+                    </Button>
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-semibold mb-2">Agent Performance Report</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Export daily metrics grouped by agent including clicks, uniques, and valid clicks.
+                    </p>
+                    <Button onClick={handleExportAgents} className="w-full">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Agents CSV
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <strong>Note:</strong> Reports include data from the last 7 days by default. 
+                    Custom date ranges coming soon.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

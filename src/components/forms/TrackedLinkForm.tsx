@@ -14,6 +14,8 @@ import { zoneService } from "@/services/zoneService";
 import { agentService } from "@/services/agentService";
 import { activationService } from "@/services/activationService";
 import type { Database } from "@/integrations/supabase/types";
+import { qrService } from "@/services/qrService";
+import { QrCode, Download } from "lucide-react";
 
 type TrackedLink = Database["public"]["Tables"]["tracked_links"]["Row"];
 type Zone = Database["public"]["Tables"]["zones"]["Row"];
@@ -50,6 +52,8 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
   const [zones, setZones] = useState<Zone[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [activation, setActivation] = useState<Activation | null>(null);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [generatingQr, setGeneratingQr] = useState(false);
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<TrackedLinkFormData>({
     resolver: zodResolver(trackedLinkSchema),
@@ -139,11 +143,37 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
         linkData.fallback_url = activation.default_landing_url;
       }
 
+      let savedLink: TrackedLink;
       if (link) {
-        await trackedLinkService.updateTrackedLink(link.id, linkData);
+        savedLink = await trackedLinkService.updateTrackedLink(link.id, linkData);
       } else {
-        await trackedLinkService.createTrackedLink(linkData);
+        savedLink = await trackedLinkService.createTrackedLink(linkData);
       }
+
+      setGeneratingQr(true);
+      try {
+        const redirectUrl = `${window.location.origin}/r/${savedLink.slug}`;
+        await qrService.generateAndUploadQR(
+          redirectUrl,
+          savedLink.id,
+          savedLink.activation_id,
+          savedLink.zone_id,
+          savedLink.agent_id
+        );
+
+        const signedUrl = await qrService.getQRSignedUrl(
+          savedLink.id,
+          savedLink.activation_id,
+          savedLink.zone_id,
+          savedLink.agent_id
+        );
+        setQrUrl(signedUrl);
+      } catch (qrError) {
+        console.error("Error generating QR:", qrError);
+      } finally {
+        setGeneratingQr(false);
+      }
+
       onSuccess();
     } catch (error) {
       console.error("Error saving tracked link:", error);
@@ -277,6 +307,35 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
           onCheckedChange={(checked) => setValue("is_active", checked)}
         />
       </div>
+
+      {qrUrl && (
+        <div className="border rounded-lg p-4 bg-green-50 dark:bg-green-900/20">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <QrCode className="h-5 w-5 text-green-600 mr-2" />
+              <h4 className="font-semibold text-green-800 dark:text-green-200">QR Code Generated!</h4>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(qrUrl, "_blank")}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </div>
+          <div className="flex justify-center">
+            <img src={qrUrl} alt="QR Code" className="w-48 h-48 border-2 border-green-200 rounded" />
+          </div>
+        </div>
+      )}
+
+      {generatingQr && (
+        <div className="text-center text-sm text-muted-foreground">
+          Generating QR code...
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 pt-4">
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
