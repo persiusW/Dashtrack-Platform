@@ -7,7 +7,7 @@ import {
   useCallback,
 } from "react";
 import { type User, type Session } from "@supabase/supabase-js";
-import { createBrowserClient } from "@supabase/ssr";
+import { createBrowserClient } from "@supabase/supabase-js";
 import { Database, Tables } from "@/integrations/supabase/types";
 import { useRouter } from "next/router";
 

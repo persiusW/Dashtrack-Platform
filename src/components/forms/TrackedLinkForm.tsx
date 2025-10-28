@@ -57,33 +57,19 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
 
   const form = useForm<TrackedLinkFormData>({
     resolver: zodResolver(trackedLinkSchema),
-    defaultValues: async () => {
-      if (!link) {
-        return {
-          slug: "",
-          destination_strategy: "smart",
-          single_url: "",
-          ios_url: "",
-          android_url: "",
-          fallback_url: "",
-          notes: "",
-          zone_id: "",
-          agent_id: "",
-          is_active: true,
-          activation_id: activationId,
-        };
-      }
-      return {
-        ...link,
-        is_active: link.is_active ?? true, // Ensure boolean
-        single_url: link.single_url ?? "",
-        ios_url: link.ios_url ?? "",
-        android_url: link.android_url ?? "",
-        fallback_url: link.fallback_url ?? "",
-        notes: link.notes ?? "",
-        zone_id: link.zone_id ?? "",
-        agent_id: link.agent_id ?? "",
-      };
+    defaultValues: {
+      ...link,
+      slug: link?.slug || "",
+      destination_strategy: link?.destination_strategy as "single" | "smart" || "smart",
+      single_url: link?.single_url || "",
+      ios_url: link?.ios_url || "",
+      android_url: link?.android_url || "",
+      fallback_url: link?.fallback_url || "",
+      notes: link?.notes || "",
+      zone_id: link?.zone_id || "",
+      agent_id: link?.agent_id || "",
+      is_active: link?.is_active ?? true,
+      activation_id: link?.activation_id || activationId,
     },
   });
 

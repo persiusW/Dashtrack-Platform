@@ -131,7 +131,7 @@ export const dashboardService = {
 
     const dateMap = new Map<string, number>();
     data?.forEach((click) => {
-      if (!click.is_bot) {
+      if (!click.is_bot && click.created_at) {
         const date = new Date(click.created_at).toISOString().split("T")[0];
         dateMap.set(date, (dateMap.get(date) || 0) + 1);
       }

@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createServerClient } from "@supabase/ssr";
+import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { Database } from "@/integrations/supabase/types";
 
 export default async function handler(
@@ -11,8 +11,10 @@ export default async function handler(
   }
 
   try {
-    const supabase = createServerClient({ req, res });
-    const { data: { session } } = await supabase.auth.getSession();
+    const supabase = createPagesServerClient<Database>({ req, res });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
     if (!session) {
       return res.status(401).json({ error: "Unauthorized" });

@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { createPagesServerClient } from "@supabase/ssr";
+import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { Database } from "@/integrations/supabase/types";
 
 export default async function handler(

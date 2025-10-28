@@ -32,7 +32,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Building2 } from "lucide-react";
 
-type Organization = Tables<"organizations">;
+type Organization = {
+  created_at: string | null;
+  id: string;
+  name: string;
+  owner_user_id: string | null;
+  plan: string | null;
+  updated_at: string | null;
+};
 
 export default function AdminOrganizationsPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);

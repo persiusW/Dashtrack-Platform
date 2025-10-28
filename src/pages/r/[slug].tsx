@@ -1,5 +1,5 @@
 import { GetServerSideProps } from "next";
-import { createServerClient } from "@supabase/ssr";
+import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { ParsedUrlQuery } from "querystring";
 import { clickService } from "@/services/clickService";
 import { trackedLinkService } from "@/services/trackedLinkService";
@@ -32,15 +32,18 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const userAgent = context.req.headers["user-agent"] || "";
   const ip = (context.req.headers["x-forwarded-for"] as string)?.split(",")[0] || 
              context.req.socket.remoteAddress || "";
-  const referrer = context.req.headers.referer || context.req.headers.referrer || "";
+  const referrer = context.req.headers.referer || "";
 
   try {
-    const supabaseAdmin = createServerClient(context, {
+    const supabaseAdmin = createPagesServerClient(context);
+    
+    // Re-create a service role client to bypass RLS for this critical path
+    const supabaseService = createPagesServerClient(context, {
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY!
+      supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
     });
 
-    const { data: link, error: linkError } = await supabaseAdmin
+    const { data: link, error: linkError } = await supabaseService
       .from("tracked_links")
       .select("*")
       .eq("slug", slug)
@@ -69,7 +72,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       is_bot: isBot
     };
 
-    const { error: clickError } = await supabaseAdmin
+    const { error: clickError } = await supabaseService
       .from("clicks")
       .insert(clickData);
 
@@ -79,7 +82,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     const today = new Date().toISOString().split("T")[0];
     
-    const { error: metricsError } = await supabaseAdmin.rpc("upsert_daily_metrics", {
+    const { error: metricsError } = await supabaseService.rpc("upsert_daily_metrics", {
       p_tracked_link_id: link.id,
       p_date: today,
       p_is_bot: isBot,
