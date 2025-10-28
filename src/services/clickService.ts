@@ -1,8 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Click {
-  id: string;
+  id: number; // Changed from string to number
   organization_id: string;
   activation_id: string;
   zone_id: string | null;
@@ -108,11 +107,11 @@ export const clickService = {
       other: clicks.filter(c => !["mobile", "desktop", "tablet"].includes(c.device_type || "")).length
     };
 
-    const referrerCounts = clicks.reduce((acc, click) => {
+    const referrerCounts = clicks.reduce((acc: Record<string, number>, click) => {
       const ref = click.referrer || "Direct";
       acc[ref] = (acc[ref] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
 
     const topReferrers = Object.entries(referrerCounts)
       .map(([referrer, count]) => ({ referrer, count }))

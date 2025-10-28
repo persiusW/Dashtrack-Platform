@@ -181,19 +181,29 @@ SUPABASE_SERVICE_KEY=your-service-role-key-here
 
 ### Automated Cleanup (Monthly)
 
-Runs on the 1st of each month at 2:00 AM UTC:
+A `pg_cron` job is scheduled to run on the 1st of each month at 3:00 AM UTC.
+
+**Job Name**: `monthly-click-cleanup`
+
+**Schedule**: `0 3 1 * *`
+
+**Action**:
 ```sql
 DELETE FROM clicks WHERE created_at < now() - interval '30 days';
 ```
 
-### Daily Metrics Computation
+A placeholder function `recompute_recent_daily_metrics()` is called before deletion, which can be expanded to preserve aggregated data if needed.
 
-Runs daily at 1:00 AM UTC (before cleanup):
+### Monitoring Cron Jobs
+
+You can check the status of scheduled jobs in your database:
 ```sql
-SELECT recompute_daily_metrics();
-```
+-- List all scheduled jobs
+SELECT * FROM cron.job;
 
-Aggregates clicks into daily_metrics for long-term storage before deletion.
+-- See the history of job runs
+SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 10;
+```
 
 ## API Endpoints to Implement
 

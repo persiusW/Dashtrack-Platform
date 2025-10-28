@@ -535,7 +535,9 @@ export type Database = {
         }[]
       }
       is_admin: { Args: never; Returns: boolean }
+      is_manager: { Args: never; Returns: boolean }
       recompute_daily_metrics: { Args: never; Returns: undefined }
+      recompute_recent_daily_metrics: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
