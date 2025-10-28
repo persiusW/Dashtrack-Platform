@@ -231,16 +231,52 @@ Aggregates clicks into daily_metrics for long-term storage before deletion.
 ## Seed Data
 
 A complete test organization is seeded with:
-- Organization: "Acme Corporation" (Professional plan)
-- Activation: "Summer Campaign 2025" (Live, multi-zone)
-- Zone: "Downtown Store" (with coordinates)
-- Agent: "John Doe" (with public stats token)
-- Tracked Link: Smart redirect with platform detection
-- Sample Clicks: 4 test events
+- **Organization**: "Acme Corporation" (Professional plan)
+  - ID: `00000000-0000-0000-0000-000000000001`
+- **Activation**: "Summer Campaign 2025" (Live, multi-zone)
+  - ID: `10000000-0000-0000-0000-000000000001`
+  - Status: Live
+  - Type: Multi-zone
+  - Date Range: June 1 - August 31, 2025
+- **Zone**: "Downtown Store" (with coordinates)
+  - ID: `20000000-0000-0000-0000-000000000001`
+  - Location: 123 Main Street (40.7128, -74.0060)
+- **Agent**: "John Doe" (with public stats token)
+  - ID: `30000000-0000-0000-0000-000000000001`
+  - Phone: +1-555-0123
+  - Email: john.doe@example.com
+  - **Public Stats Token**: `a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d`
+- **Tracked Link**: Smart redirect with platform detection
+  - ID: `50000000-0000-0000-0000-000000000001`
+  - Slug: `summer-downtown`
+  - Strategy: Smart (iOS/Android/Fallback URLs)
+- **Sample Clicks**: 4 test events across different devices and days
 
-Agent stats token can be retrieved:
+### Testing with Seed Data
+
+**Get Agent Public Stats:**
+```bash
+curl "https://your-project.supabase.co/rest/v1/rpc/get_agent_public_stats" \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"token": "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"}'
+```
+
+**Query Tracked Link:**
 ```sql
-SELECT public_stats_token FROM agents WHERE name = 'John Doe';
+SELECT * FROM tracked_links WHERE slug = 'summer-downtown';
+```
+
+**View Click Analytics:**
+```sql
+SELECT 
+  DATE(created_at) as date,
+  COUNT(*) as clicks,
+  COUNT(DISTINCT ip) as unique_visitors
+FROM clicks 
+WHERE tracked_link_id = '50000000-0000-0000-0000-000000000001'
+GROUP BY DATE(created_at)
+ORDER BY date DESC;
 ```
 
 ## Next Steps
