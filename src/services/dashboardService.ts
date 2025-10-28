@@ -94,8 +94,13 @@ export const dashboardService = {
     return result;
   },
 
-  async getTimeSeriesData(dateFrom: string, dateTo: string, activationId?: string): Promise<TimeSeriesData[]> {
-    const cacheKey = `timeseries-${dateFrom}-${dateTo}-${activationId || "all"}`;
+  async getTimeSeriesData(
+    dateFrom: string,
+    dateTo: string,
+    activationId?: string,
+    zoneId?: string
+  ): Promise<TimeSeriesData[]> {
+    const cacheKey = `timeseries-${dateFrom}-${dateTo}-${activationId || "all"}-${zoneId || "all"}`;
     const cached = getCachedData<TimeSeriesData[]>(cacheKey);
     if (cached) return cached;
 
@@ -107,6 +112,9 @@ export const dashboardService = {
 
     if (activationId) {
       query = query.eq("activation_id", activationId);
+    }
+    if (zoneId) {
+      query = query.eq("zone_id", zoneId);
     }
 
     const { data } = await query;
