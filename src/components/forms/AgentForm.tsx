@@ -62,7 +62,8 @@ export function AgentForm({ agent, onSuccess }: AgentFormProps) {
         await agentService.updateAgent(agent.id, updateData);
       } else {
         const insertData: Omit<AgentInsert, "id" | "created_at" | "updated_at" | "public_stats_token" | "organization_id"> = {
-            ...data,
+            name: data.name,
+            active: data.active,
             phone: data.phone || null,
             email: data.email || null,
         }

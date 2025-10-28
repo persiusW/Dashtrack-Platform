@@ -65,20 +65,25 @@ export function ActivationForm({ activation, onSuccess }: ActivationFormProps) {
     setLoading(true);
     setError(null);
     try {
-      const payload = {
-        ...data,
-        description: data.description || null,
-        start_at: data.start_at ? new Date(data.start_at).toISOString() : null,
-        end_at: data.end_at ? new Date(data.end_at).toISOString() : null,
-      };
-
       if (activation) {
-        await activationService.updateActivation(activation.id, payload);
-      } else {
-        const createData: ActivationInsert = {
-            ...payload
+        const payloadForUpdate: Partial<Activation> = {
+            ...data,
+            description: data.description || null,
+            start_at: data.start_at ? new Date(data.start_at).toISOString() : null,
+            end_at: data.end_at ? new Date(data.end_at).toISOString() : null,
         };
-        await activationService.createActivation(createData);
+        await activationService.updateActivation(activation.id, payloadForUpdate);
+      } else {
+        const payloadForInsert: ActivationInsert = {
+            name: data.name,
+            default_landing_url: data.default_landing_url,
+            type: data.type,
+            status: data.status,
+            description: data.description || null,
+            start_at: data.start_at ? new Date(data.start_at).toISOString() : null,
+            end_at: data.end_at ? new Date(data.end_at).toISOString() : null,
+        };
+        await activationService.createActivation(payloadForInsert);
       }
       onSuccess();
     } catch (err: any) {
