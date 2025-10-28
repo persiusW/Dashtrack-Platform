@@ -652,15 +652,25 @@ export type Database = {
       }
       recompute_daily_metrics: { Args: never; Returns: undefined }
       recompute_recent_daily_metrics: { Args: never; Returns: undefined }
-      upsert_daily_metrics: {
-        Args: {
-          p_date: string
-          p_is_bot: boolean
-          p_organization_id: string
-          p_tracked_link_id: string
-        }
-        Returns: undefined
-      }
+      upsert_daily_metrics:
+        | {
+            Args: {
+              p_date: string
+              p_is_bot: boolean
+              p_organization_id: string
+              p_tracked_link_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_date: string
+              p_is_bot: boolean
+              p_organization_id: string
+              p_tracked_link_id: string
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       [_ in never]: never

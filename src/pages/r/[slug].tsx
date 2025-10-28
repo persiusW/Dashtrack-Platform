@@ -1,28 +1,26 @@
 
 import { GetServerSideProps } from "next";
 import { supabase } from "@/integrations/supabase/client";
+import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
 
-/**
- * Smart redirect endpoint for tracked links
- * Detects device type, logs click, and redirects to appropriate URL
- */
-
-interface RedirectPageProps {
-  error?: string;
+interface TrackedLink {
+  id: string;
+  organization_id: string;
+  activation_id: string;
+  zone_id: string | null;
+  agent_id: string | null;
+  slug: string;
+  destination_strategy: string;
+  single_url: string | null;
+  ios_url: string | null;
+  android_url: string | null;
+  fallback_url: string | null;
+  is_active: boolean;
 }
 
-export default function RedirectPage({ error }: RedirectPageProps) {
-  if (error) {
-    return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        <h1>404 - Link Not Found</h1>
-        <p>{error}</p>
-      </div>
-    );
-  }
-
+export default function RedirectPage() {
   return (
-    <div style={{ padding: "20px", textAlign: "center" }}>
+    <div className="min-h-screen flex items-center justify-center">
       <p>Redirecting...</p>
     </div>
   );
@@ -32,13 +30,16 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const { slug } = context.params as { slug: string };
   const userAgent = context.req.headers["user-agent"] || "";
   const ip = (context.req.headers["x-forwarded-for"] as string)?.split(",")[0] || 
-             context.req.socket.remoteAddress || 
-             null;
-  const referrer = context.req.headers.referer || context.req.headers.referrer || null;
+             context.req.socket.remoteAddress || "";
+  const referrer = context.req.headers.referer || context.req.headers.referrer || "";
 
   try {
-    // Lookup tracked link by slug
-    const { data: link, error: linkError } = await supabase
+    const supabaseAdmin = createServerSupabaseClient(context, {
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY!
+    });
+
+    const { data: link, error: linkError } = await supabaseAdmin
       .from("tracked_links")
       .select("*")
       .eq("slug", slug)
@@ -47,93 +48,113 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     if (linkError || !link) {
       return {
-        props: {
-          error: "Link not found or inactive"
-        }
+        notFound: true
       };
     }
 
-    // Detect device type
-    const ua = userAgent.toLowerCase();
-    let deviceType = "other";
-    if (/(iphone|ipod|ipad)/i.test(ua)) {
-      deviceType = "ios";
-    } else if (/android/i.test(ua)) {
-      deviceType = "android";
-    } else if (/(tablet|ipad)/i.test(ua)) {
-      deviceType = "tablet";
-    } else if (/(mobile)/i.test(ua)) {
-      deviceType = "mobile";
-    } else {
-      deviceType = "desktop";
-    }
+    const deviceType = detectDeviceType(userAgent);
+    const isBot = detectBot(userAgent);
 
-    // Detect bots
-    const botPatterns = /(bot|crawl|spider|facebookexternalhit|slurp|mediapartners|bingbot|googlebot)/i;
-    const isBot = botPatterns.test(ua);
+    const clickData = {
+      organization_id: link.organization_id,
+      activation_id: link.activation_id,
+      zone_id: link.zone_id,
+      agent_id: link.agent_id,
+      tracked_link_id: link.id,
+      ip: ip,
+      user_agent: userAgent,
+      referrer: referrer,
+      device_type: deviceType,
+      is_bot: isBot
+    };
 
-    // Insert click record
-    const { error: clickError } = await supabase
+    const { error: clickError } = await supabaseAdmin
       .from("clicks")
-      .insert({
-        organization_id: link.organization_id,
-        activation_id: link.activation_id,
-        zone_id: link.zone_id,
-        agent_id: link.agent_id,
-        tracked_link_id: link.id,
-        ip: ip,
-        user_agent: userAgent,
-        referrer: referrer,
-        device_type: deviceType,
-        is_bot: isBot
-      });
+      .insert(clickData);
 
     if (clickError) {
-      console.error("Error logging click:", clickError);
+      console.error("Failed to record click:", clickError);
     }
 
-    // Upsert daily metrics
     const today = new Date().toISOString().split("T")[0];
-    const { error: metricsError } = await supabase.rpc("upsert_daily_metrics", {
+    
+    const { error: metricsError } = await supabaseAdmin.rpc("upsert_daily_metrics", {
       p_tracked_link_id: link.id,
-      p_organization_id: link.organization_id,
       p_date: today,
-      p_is_bot: isBot
+      p_is_bot: isBot,
+      p_organization_id: link.organization_id
     });
 
     if (metricsError) {
-      console.error("Error updating metrics:", metricsError);
+      console.error("Failed to update metrics:", metricsError);
     }
 
-    // Determine redirect URL based on strategy
-    let redirectUrl: string;
+    const redirectUrl = getRedirectUrl(link, deviceType);
 
-    if (link.destination_strategy === "single") {
-      redirectUrl = link.single_url || link.fallback_url || "https://example.com";
-    } else {
-      // Smart strategy
-      if (deviceType === "ios" && link.ios_url) {
-        redirectUrl = link.ios_url;
-      } else if (deviceType === "android" && link.android_url) {
-        redirectUrl = link.android_url;
-      } else {
-        redirectUrl = link.fallback_url || "https://example.com";
-      }
-    }
-
-    // Perform 302 redirect
     return {
       redirect: {
         destination: redirectUrl,
-        statusCode: 302
+        permanent: false
       }
     };
   } catch (error) {
-    console.error("Error in redirect:", error);
+    console.error("Redirect error:", error);
     return {
-      props: {
-        error: "An error occurred while processing your request"
-      }
+      notFound: true
     };
   }
 };
+
+function detectDeviceType(userAgent: string): string {
+  const ua = userAgent.toLowerCase();
+  
+  if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) {
+    return "ios";
+  }
+  
+  if (ua.includes("android")) {
+    return "android";
+  }
+  
+  return "other";
+}
+
+function detectBot(userAgent: string): boolean {
+  const ua = userAgent.toLowerCase();
+  const botPatterns = [
+    "bot",
+    "crawl",
+    "spider",
+    "facebookexternalhit",
+    "whatsapp",
+    "telegram",
+    "slackbot",
+    "twitterbot",
+    "linkedinbot",
+    "discordbot"
+  ];
+  
+  return botPatterns.some(pattern => ua.includes(pattern));
+}
+
+function getRedirectUrl(link: TrackedLink, deviceType: string): string {
+  if (link.destination_strategy === "single" && link.single_url) {
+    return link.single_url;
+  }
+  
+  if (link.destination_strategy === "smart") {
+    if (deviceType === "ios" && link.ios_url) {
+      return link.ios_url;
+    }
+    
+    if (deviceType === "android" && link.android_url) {
+      return link.android_url;
+    }
+    
+    if (link.fallback_url) {
+      return link.fallback_url;
+    }
+  }
+  
+  return link.fallback_url || link.single_url || "https://example.com";
+}
