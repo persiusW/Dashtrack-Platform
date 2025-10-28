@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -314,8 +314,29 @@ export type Database = {
             foreignKeyName: "tracked_links_activation_id_fkey"
             columns: ["activation_id"]
             isOneToOne: false
+            referencedRelation: "activation_agent_report"
+            referencedColumns: ["activation_id"]
+          },
+          {
+            foreignKeyName: "tracked_links_activation_id_fkey"
+            columns: ["activation_id"]
+            isOneToOne: false
+            referencedRelation: "activation_zone_report"
+            referencedColumns: ["activation_id"]
+          },
+          {
+            foreignKeyName: "tracked_links_activation_id_fkey"
+            columns: ["activation_id"]
+            isOneToOne: false
             referencedRelation: "activations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracked_links_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "activation_agent_report"
+            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "tracked_links_agent_id_fkey"
@@ -337,6 +358,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracked_links_zone_fk"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "activation_agent_report"
+            referencedColumns: ["zone_id"]
+          },
+          {
+            foreignKeyName: "tracked_links_zone_fk"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "activation_zone_report"
+            referencedColumns: ["zone_id"]
           },
           {
             foreignKeyName: "tracked_links_zone_fk"
@@ -409,6 +444,13 @@ export type Database = {
             foreignKeyName: "zone_agents_agent_id_fkey"
             columns: ["agent_id"]
             isOneToOne: false
+            referencedRelation: "activation_agent_report"
+            referencedColumns: ["agent_id"]
+          },
+          {
+            foreignKeyName: "zone_agents_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
             referencedRelation: "agents"
             referencedColumns: ["id"]
           },
@@ -425,6 +467,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zone_agents_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "activation_agent_report"
+            referencedColumns: ["zone_id"]
+          },
+          {
+            foreignKeyName: "zone_agents_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "activation_zone_report"
+            referencedColumns: ["zone_id"]
           },
           {
             foreignKeyName: "zone_agents_zone_id_fkey"
@@ -477,6 +533,20 @@ export type Database = {
             foreignKeyName: "zones_activation_id_fkey"
             columns: ["activation_id"]
             isOneToOne: false
+            referencedRelation: "activation_agent_report"
+            referencedColumns: ["activation_id"]
+          },
+          {
+            foreignKeyName: "zones_activation_id_fkey"
+            columns: ["activation_id"]
+            isOneToOne: false
+            referencedRelation: "activation_zone_report"
+            referencedColumns: ["activation_id"]
+          },
+          {
+            foreignKeyName: "zones_activation_id_fkey"
+            columns: ["activation_id"]
+            isOneToOne: false
             referencedRelation: "activations"
             referencedColumns: ["id"]
           },
@@ -498,6 +568,32 @@ export type Database = {
       }
     }
     Views: {
+      activation_agent_report: {
+        Row: {
+          activation_id: string | null
+          agent_id: string | null
+          agent_name: string | null
+          clicks: number | null
+          date: string | null
+          unique_links: number | null
+          valid_clicks: number | null
+          zone_id: string | null
+          zone_name: string | null
+        }
+        Relationships: []
+      }
+      activation_zone_report: {
+        Row: {
+          activation_id: string | null
+          clicks: number | null
+          date: string | null
+          unique_links: number | null
+          valid_clicks: number | null
+          zone_id: string | null
+          zone_name: string | null
+        }
+        Relationships: []
+      }
       public_agent_stats: {
         Row: {
           active_days: number | null
@@ -522,6 +618,10 @@ export type Database = {
       }
     }
     Functions: {
+      check_slug_available: {
+        Args: { p_exclude_id?: string; p_slug: string }
+        Returns: boolean
+      }
       current_user_organization_id: { Args: never; Returns: string }
       get_agent_public_stats: {
         Args: { token: string }
@@ -536,8 +636,28 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_manager: { Args: never; Returns: boolean }
+      public_agent_stats: {
+        Args: { p_from_date?: string; p_to_date?: string; p_token: string }
+        Returns: {
+          agent_id: string
+          agent_name: string
+          daily_data: Json
+          public_link: string
+          total_clicks: number
+          valid_clicks: number
+        }[]
+      }
       recompute_daily_metrics: { Args: never; Returns: undefined }
       recompute_recent_daily_metrics: { Args: never; Returns: undefined }
+      upsert_daily_metrics: {
+        Args: {
+          p_date: string
+          p_is_bot: boolean
+          p_organization_id: string
+          p_tracked_link_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
