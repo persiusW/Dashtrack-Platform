@@ -1,5 +1,17 @@
 # Supabase Auth Hook Configuration
 
+## ✅ Test User Created Successfully!
+
+A test user has been created for you to log in:
+- **Email:** test@example.com
+- **Password:** password123
+- **Organization:** Test Organization
+- **Role:** client_manager
+
+You can now log in at `/app/overview` with these credentials!
+
+---
+
 ## Problem: "Database error querying schema" during login
 
 ### Root Cause
