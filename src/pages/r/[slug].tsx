@@ -1,8 +1,6 @@
 import { GetServerSideProps } from "next";
-import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
-import { ParsedUrlQuery } from "querystring";
-import { clickService } from "@/services/clickService";
-import { trackedLinkService } from "@/services/trackedLinkService";
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { Database } from "@/integrations/supabase/types";
 
 interface TrackedLink {
   id: string;
@@ -11,12 +9,12 @@ interface TrackedLink {
   zone_id: string | null;
   agent_id: string | null;
   slug: string;
-  destination_strategy: string;
+  destination_strategy: string | null;
   single_url: string | null;
   ios_url: string | null;
   android_url: string | null;
   fallback_url: string | null;
-  is_active: boolean;
+  is_active: boolean | null;
 }
 
 export default function RedirectPage() {
@@ -35,13 +33,18 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const referrer = context.req.headers.referer || "";
 
   try {
-    const supabaseAdmin = createPagesServerClient(context);
-    
-    // Re-create a service role client to bypass RLS for this critical path
-    const supabaseService = createPagesServerClient(context, {
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    });
+    // Service role client to bypass RLS for this critical path
+    const supabaseService = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          get: (name: string) => context.req.cookies[name],
+          set: () => {},
+          remove: () => {},
+        },
+      }
+    );
 
     const { data: link, error: linkError } = await supabaseService
       .from("tracked_links")
@@ -51,9 +54,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       .single();
 
     if (linkError || !link) {
-      return {
-        notFound: true
-      };
+      console.error(`Redirect error for slug '${slug}':`, linkError?.message || "Link not found");
+      return { notFound: true };
     }
 
     const deviceType = detectDeviceType(userAgent);
@@ -77,7 +79,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       .insert(clickData);
 
     if (clickError) {
-      console.error("Failed to record click:", clickError);
+      console.error(`Failed to record click for slug '${slug}':`, clickError);
     }
 
     const today = new Date().toISOString().split("T")[0];
@@ -90,7 +92,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     });
 
     if (metricsError) {
-      console.error("Failed to update metrics:", metricsError);
+      console.error(`Failed to update metrics for slug '${slug}':`, metricsError);
     }
 
     const redirectUrl = getRedirectUrl(link, deviceType);
@@ -102,42 +104,21 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       }
     };
   } catch (error) {
-    console.error("Redirect error:", error);
-    return {
-      notFound: true
-    };
+    console.error(`General redirect error for slug '${slug}':`, error);
+    return { notFound: true };
   }
 };
 
 function detectDeviceType(userAgent: string): string {
   const ua = userAgent.toLowerCase();
-  
-  if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) {
-    return "ios";
-  }
-  
-  if (ua.includes("android")) {
-    return "android";
-  }
-  
+  if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) return "ios";
+  if (ua.includes("android")) return "android";
   return "other";
 }
 
 function detectBot(userAgent: string): boolean {
   const ua = userAgent.toLowerCase();
-  const botPatterns = [
-    "bot",
-    "crawl",
-    "spider",
-    "facebookexternalhit",
-    "whatsapp",
-    "telegram",
-    "slackbot",
-    "twitterbot",
-    "linkedinbot",
-    "discordbot"
-  ];
-  
+  const botPatterns = ["bot", "crawl", "spider", "facebookexternalhit", "whatsapp", "telegram", "slackbot", "twitterbot", "linkedinbot", "discordbot"];
   return botPatterns.some(pattern => ua.includes(pattern));
 }
 
@@ -147,18 +128,10 @@ function getRedirectUrl(link: TrackedLink, deviceType: string): string {
   }
   
   if (link.destination_strategy === "smart") {
-    if (deviceType === "ios" && link.ios_url) {
-      return link.ios_url;
-    }
-    
-    if (deviceType === "android" && link.android_url) {
-      return link.android_url;
-    }
-    
-    if (link.fallback_url) {
-      return link.fallback_url;
-    }
+    if (deviceType === "ios" && link.ios_url) return link.ios_url;
+    if (deviceType === "android" && link.android_url) return link.android_url;
+    if (link.fallback_url) return link.fallback_url;
   }
   
-  return link.fallback_url || link.single_url || "https://example.com";
+  return link.fallback_url || link.single_url || `/?error=redirect_failed_for_${link.slug}`;
 }

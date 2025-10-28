@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { Database } from "@/integrations/supabase/types";
 
 export default async function handler(
@@ -11,7 +11,19 @@ export default async function handler(
   }
 
   try {
-    const supabase = createPagesServerClient<Database>({ req, res });
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get: (name: string) => req.cookies[name],
+          // Setting cookies is not required for a read-only endpoint
+          set: () => {},
+          remove: () => {},
+        },
+      }
+    );
+
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -22,62 +34,28 @@ export default async function handler(
 
     const { activationId, fromDate, toDate } = req.query;
 
-    if (!activationId || !fromDate || !toDate) {
+    if (!activationId || typeof activationId !== "string" || !fromDate || !toDate) {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
     const { data: metrics, error } = await supabase
-      .from("daily_metrics")
-      .select(`
-        date,
-        clicks,
-        valid_clicks,
-        uniques,
-        tracked_links!inner (
-          agent_id,
-          agents!tracked_links_agent_id_fkey (
-            name
-          )
-        )
-      `)
-      .eq("tracked_links.activation_id", activationId)
-      .gte("date", fromDate)
-      .lte("date", toDate)
-      .not("tracked_links.agent_id", "is", null)
+      .from("activation_agent_report")
+      .select("*")
+      .eq("activation_id", activationId)
+      .gte("date", fromDate as string)
+      .lte("date", toDate as string)
       .order("date", { ascending: true });
 
     if (error) throw error;
 
-    const aggregated = new Map<string, { date: string; agent: string; clicks: number; uniques: number; valid_clicks: number }>();
-
-    metrics?.forEach((metric: any) => {
-      const agentName = metric.tracked_links?.agents?.name || "Unknown Agent";
-      const key = `${metric.date}_${agentName}`;
-      
-      if (aggregated.has(key)) {
-        const existing = aggregated.get(key)!;
-        existing.clicks += metric.clicks;
-        existing.valid_clicks += metric.valid_clicks;
-        existing.uniques += metric.uniques;
-      } else {
-        aggregated.set(key, {
-          date: metric.date,
-          agent: agentName,
-          clicks: metric.clicks,
-          valid_clicks: metric.valid_clicks,
-          uniques: metric.uniques
-        });
-      }
-    });
-
     const csvRows = [
       ["Date", "Agent", "Clicks", "Uniques", "Valid Clicks"],
-      ...Array.from(aggregated.values()).map(row => [
-        row.date,
-        row.agent,
-        row.clicks.toString(),
-        row.uniques.toString(),
-        row.valid_clicks.toString()
+      ...(metrics || []).map(row => [
+        row.date || "",
+        row.agent_name || "Unknown Agent",
+        (row.clicks || 0).toString(),
+        (row.unique_links || 0).toString(),
+        (row.valid_clicks || 0).toString()
       ])
     ];
 
