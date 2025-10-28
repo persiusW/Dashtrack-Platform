@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface QRCodeOptions {
@@ -14,10 +13,10 @@ export const qrService = {
    * Generate QR code and upload to storage
    */
   async generateAndUploadQR(options: QRCodeOptions): Promise<string> {
-    const { trackedLinkId, slug, activationId, zoneId, agentId } = options;
+    const { slug, trackedLinkId, activationId, zoneId, agentId } = options;
     
     // Generate QR code URL
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dashtrack.com";
+    const appUrl = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || "https://dashtrack.com");
     const qrUrl = `${appUrl}/r/${slug}`;
     
     // Use a QR code generation API (we'll use qrcode library)
@@ -37,11 +36,11 @@ export const qrService = {
     // Determine storage path based on context
     let storagePath: string;
     if (agentId && zoneId) {
-      storagePath = `qr/${trackedLinkId}/${activationId}/${zoneId}/${agentId}.png`;
+      storagePath = `${activationId}/${zoneId}/${agentId}.png`;
     } else if (zoneId) {
-      storagePath = `qr/${trackedLinkId}/${activationId}/${zoneId}.png`;
+      storagePath = `${activationId}/${zoneId}.png`;
     } else {
-      storagePath = `qr/${trackedLinkId}/${activationId}.png`;
+      storagePath = `${activationId}/${trackedLinkId}.png`;
     }
 
     // Upload to Supabase Storage
@@ -67,14 +66,15 @@ export const qrService = {
   /**
    * Get signed URL for existing QR code
    */
-  async getQRSignedUrl(trackedLinkId: string, activationId: string, zoneId?: string | null, agentId?: string | null, expiresIn: number = 3600): Promise<string> {
+  async getQRSignedUrl(options: {trackedLinkId: string, activationId: string, zoneId?: string | null, agentId?: string | null}, expiresIn: number = 3600): Promise<string> {
+    const { trackedLinkId, activationId, zoneId, agentId } = options;
     let storagePath: string;
     if (agentId && zoneId) {
-      storagePath = `qr/${trackedLinkId}/${activationId}/${zoneId}/${agentId}.png`;
+      storagePath = `${activationId}/${zoneId}/${agentId}.png`;
     } else if (zoneId) {
-      storagePath = `qr/${trackedLinkId}/${activationId}/${zoneId}.png`;
+      storagePath = `${activationId}/${zoneId}.png`;
     } else {
-      storagePath = `qr/${trackedLinkId}/${activationId}.png`;
+      storagePath = `${activationId}/${trackedLinkId}.png`;
     }
 
     const { data, error } = await supabase.storage
@@ -88,14 +88,15 @@ export const qrService = {
   /**
    * Delete QR code from storage
    */
-  async deleteQR(trackedLinkId: string, activationId: string, zoneId?: string | null, agentId?: string | null): Promise<void> {
+  async deleteQR(options: {trackedLinkId: string, activationId: string, zoneId?: string | null, agentId?: string | null}): Promise<void> {
+    const { trackedLinkId, activationId, zoneId, agentId } = options;
     let storagePath: string;
     if (agentId && zoneId) {
-      storagePath = `qr/${trackedLinkId}/${activationId}/${zoneId}/${agentId}.png`;
+      storagePath = `${activationId}/${zoneId}/${agentId}.png`;
     } else if (zoneId) {
-      storagePath = `qr/${trackedLinkId}/${activationId}/${zoneId}.png`;
+      storagePath = `${activationId}/${zoneId}.png`;
     } else {
-      storagePath = `qr/${trackedLinkId}/${activationId}.png`;
+      storagePath = `${activationId}/${trackedLinkId}.png`;
     }
 
     const { error } = await supabase.storage

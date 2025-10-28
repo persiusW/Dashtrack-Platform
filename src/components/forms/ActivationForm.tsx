@@ -58,10 +58,7 @@ export function ActivationForm({ activation, organizationId, onSuccess, onCancel
       if (activation) {
         await activationService.updateActivation(activation.id, data);
       } else {
-        await activationService.createActivation({
-          ...data,
-          organization_id: organizationId
-        });
+        await activationService.createActivation(data);
       }
       onSuccess();
     } catch (error) {

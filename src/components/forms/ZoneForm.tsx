@@ -63,14 +63,14 @@ export function ZoneForm({ zone, activationId, organizationId, onSuccess, onCanc
   const onSubmit = async (data: ZoneFormData) => {
     setLoading(true);
     try {
+      const payload = {
+        ...data,
+        activation_id: activationId,
+      };
       if (zone) {
-        await zoneService.updateZone(zone.id, data);
+        await zoneService.updateZone(zone.id, payload);
       } else {
-        await zoneService.createZone({
-          ...data,
-          activation_id: activationId,
-          organization_id: organizationId
-        });
+        await zoneService.createZone(payload);
       }
       onSuccess();
     } catch (error) {

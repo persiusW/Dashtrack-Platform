@@ -32,6 +32,20 @@ export const zoneService = {
   },
 
   /**
+   * Get all zones for a specific activation
+   */
+  async getZonesByActivation(activationId: string): Promise<Zone[]> {
+    const { data, error } = await supabase
+      .from("zones")
+      .select("*")
+      .eq("activation_id", activationId)
+      .order("name");
+    
+    if (error) throw error;
+    return data as Zone[];
+  },
+
+  /**
    * Get a single zone by ID
    */
   async getZone(id: string): Promise<Zone> {

@@ -68,7 +68,11 @@ export default function PublicAgentStatsPage() {
         return;
       }
 
-      setStats(statsData[0]);
+      const agentStats: AgentStats = {
+        ...statsData[0],
+        daily_stats: Array.isArray(statsData[0].daily_stats) ? statsData[0].daily_stats : JSON.parse(statsData[0].daily_stats || "[]")
+      };
+      setStats(agentStats);
 
       const { data: linkData, error: linkError } = await supabase
         .from("tracked_links")
@@ -82,12 +86,12 @@ export default function PublicAgentStatsPage() {
         setAgentLink(linkData);
 
         try {
-          const signedUrl = await qrService.getQRSignedUrl(
-            linkData.id,
-            linkData.activation_id,
-            linkData.zone_id,
-            linkData.agent_id
-          );
+          const signedUrl = await qrService.getQRSignedUrl({
+            trackedLinkId: linkData.id,
+            activationId: linkData.activation_id,
+            zoneId: linkData.zone_id,
+            agentId: linkData.agent_id
+          });
           setQrUrl(signedUrl);
         } catch (qrError) {
           console.error("Failed to load QR code:", qrError);
