@@ -255,7 +255,7 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
           <Label htmlFor="zone_id">Zone (Optional)</Label>
           <Select
             value={form.watch("zone_id") ?? ""}
-            onValueChange={(value) => form.setValue("zone_id", value || undefined)}
+            onValueChange={(value) => form.setValue("zone_id", value || null)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select zone" />
@@ -275,7 +275,7 @@ export function TrackedLinkForm({ link, activationId, organizationId, onSuccess,
           <Label htmlFor="agent_id">Agent (Optional)</Label>
           <Select
             value={form.watch("agent_id") ?? ""}
-            onValueChange={(value) => form.setValue("agent_id", value || undefined)}
+            onValueChange={(value) => form.setValue("agent_id", value || null)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select agent" />

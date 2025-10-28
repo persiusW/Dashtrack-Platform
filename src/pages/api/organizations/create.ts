@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { Database } from "@/integrations/supabase/types";
 
 export default async function handler(
@@ -11,7 +11,23 @@ export default async function handler(
   }
 
   try {
-    const supabase = createPagesServerClient<Database>({ req, res });
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return req.cookies[name];
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            res.setHeader("Set-Cookie", `${name}=${value}; Path=/; HttpOnly`);
+          },
+          remove(name: string, options: CookieOptions) {
+            res.setHeader("Set-Cookie", `${name}=; Path=/; HttpOnly; Max-Age=0`);
+          },
+        },
+      }
+    );
 
     const {
       data: { user },
@@ -38,7 +54,7 @@ export default async function handler(
 
     const { data: org, error: orgError } = await supabase
       .from("organizations")
-      .insert({ name: organizationName.trim() }) // plan defaults to 'free'; owner_user_id handled by policies/defaults
+      .insert({ name: organizationName.trim() }) // plan defaults to 'free'
       .select("id")
       .single();
 
@@ -67,6 +83,7 @@ export default async function handler(
 
     if (userLinkError) {
       console.error("User-organization link error:", userLinkError);
+      // Rollback organization creation
       await supabase.from("organizations").delete().eq("id", org.id);
       return res.status(500).json({
         ok: false,
