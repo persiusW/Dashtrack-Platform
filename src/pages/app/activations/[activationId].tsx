@@ -1,248 +1,349 @@
-import { AppLayout } from "@/components/layouts/AppLayout";
+
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { GlobalFilters } from "@/components/dashboard/GlobalFilters";
+import { KPICard } from "@/components/dashboard/KPICard";
+import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
+import { useGlobalFilters } from "@/hooks/useGlobalFilters";
+import {
+  dashboardService,
+  KPIData,
+  TimeSeriesData,
+  ZonePerformance,
+  AgentPerformance,
+} from "@/services/dashboardService";
+import { trackedLinkService, TrackedLink } from "@/services/trackedLinkService";
+import { activationService, Activation } from "@/services/activationService";
+import { MousePointerClick, CheckCircle2, Users, Link as LinkIcon, Copy, Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Link2, BarChart3, Edit, Download } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import { toast } from "@/hooks/use-toast";
 
 export default function ActivationDetailPage() {
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { activationId } = router.query;
+  const { filters } = useGlobalFilters();
 
-  const activation = {
-    id: activationId,
-    name: "Summer Campaign 2024",
-    description: "Promotional campaign for summer products",
-    type: "multi",
-    status: "live",
-    start_at: "2024-06-01",
-    end_at: "2024-08-31",
-    default_landing_url: "https://example.com/summer",
-  };
+  const [activation, setActivation] = useState<Activation | null>(null);
+  const [kpis, setKpis] = useState<KPIData | null>(null);
+  const [timeSeries, setTimeSeries] = useState<TimeSeriesData[]>([]);
+  const [zonePerformance, setZonePerformance] = useState<ZonePerformance[]>([]);
+  const [agentPerformance, setAgentPerformance] = useState<AgentPerformance[]>([]);
+  const [links, setLinks] = useState<TrackedLink[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "live":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      case "draft":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user && activationId) {
+      loadActivationData();
+    }
+  }, [user, activationId, filters]);
+
+  const loadActivationData = async () => {
+    if (typeof activationId !== "string") return;
+
+    try {
+      setLoading(true);
+      const [activationData, kpiData, timeSeriesData, zonesData, agentsData, linksData] = await Promise.all([
+        activationService.getActivationById(activationId),
+        dashboardService.getActivationKPIs(activationId, filters.dateFrom, filters.dateTo),
+        dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, activationId),
+        dashboardService.getZonePerformance(activationId, filters.dateFrom, filters.dateTo),
+        dashboardService.getAgentPerformance(activationId, filters.dateFrom, filters.dateTo),
+        trackedLinkService.getLinksByActivation(activationId),
+      ]);
+
+      setActivation(activationData);
+      setKpis(kpiData);
+      setTimeSeries(timeSeriesData);
+      setZonePerformance(zonesData);
+      setAgentPerformance(agentsData);
+      setLinks(linksData);
+    } catch (error) {
+      console.error("Failed to load activation data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleExportZones = () => {
-    const fromDate = new Date();
-    fromDate.setDate(fromDate.getDate() - 7);
-    const toDate = new Date();
-    
-    const url = `/api/reports/export-zones?activationId=${activationId}&fromDate=${fromDate.toISOString().split("T")[0]}&toDate=${toDate.toISOString().split("T")[0]}`;
-    window.open(url, "_blank");
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: "Link copied to clipboard",
+    });
   };
 
-  const handleExportAgents = () => {
-    const fromDate = new Date();
-    fromDate.setDate(fromDate.getDate() - 7);
-    const toDate = new Date();
-    
-    const url = `/api/reports/export-agents?activationId=${activationId}&fromDate=${fromDate.toISOString().split("T")[0]}&toDate=${toDate.toISOString().split("T")[0]}`;
-    window.open(url, "_blank");
+  const downloadCSV = async (type: "zones" | "agents") => {
+    try {
+      const response = await fetch(`/api/reports/export-${type}?activationId=${activationId}&dateFrom=${filters.dateFrom}&dateTo=${filters.dateTo}`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${type}-report-${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download CSV:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download report",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (authLoading || !user || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center space-x-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {activation.name}
-              </h1>
-              <Badge className={getStatusColor(activation.status)}>
-                {activation.status}
-              </Badge>
-            </div>
-            <p className="text-gray-600 dark:text-gray-400">
-              {activation.description}
-            </p>
+    <div className="container mx-auto p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">{activation?.name || "Activation"}</h1>
+        <p className="text-muted-foreground mt-1">{activation?.description}</p>
+      </div>
+
+      <GlobalFilters />
+
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="zones">Zones</TabsTrigger>
+          <TabsTrigger value="agents">Agents</TabsTrigger>
+          <TabsTrigger value="links">Links</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <KPICard
+              title="Total Clicks"
+              value={kpis?.totalClicks || 0}
+              icon={MousePointerClick}
+              description="All clicks received"
+            />
+            <KPICard
+              title="Valid Clicks"
+              value={kpis?.validClicks || 0}
+              icon={CheckCircle2}
+              description="Non-bot clicks"
+            />
+            <KPICard
+              title="Total Agents"
+              value={kpis?.totalAgents || 0}
+              icon={Users}
+              description="Assigned agents"
+            />
+            <KPICard
+              title="Total Links"
+              value={links.length}
+              icon={LinkIcon}
+              description="Tracked links"
+            />
           </div>
-          <Button variant="outline">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        </div>
+          <TimeSeriesChart data={timeSeries} />
+        </TabsContent>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="zones">Zones</TabsTrigger>
-            <TabsTrigger value="agents">Agents</TabsTrigger>
-            <TabsTrigger value="links">Links</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-          </TabsList>
+        <TabsContent value="zones" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Zone Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Zone Name</TableHead>
+                    <TableHead>Total Clicks</TableHead>
+                    <TableHead>Valid Clicks</TableHead>
+                    <TableHead>Unique Visitors</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {zonePerformance.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        No zone data available
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    zonePerformance.map((zone) => (
+                      <TableRow key={zone.zoneId}>
+                        <TableCell className="font-medium">{zone.zoneName}</TableCell>
+                        <TableCell>{zone.totalClicks}</TableCell>
+                        <TableCell>{zone.validClicks}</TableCell>
+                        <TableCell>{zone.uniqueVisitors}</TableCell>
+                        <TableCell>
+                          <Link href={`/app/activations/${activationId}/zones/${zone.zoneId}`}>
+                            <Button variant="ghost" size="sm">
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              View Details
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Clicks</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-blue-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">8,234</div>
-                  <p className="text-xs text-muted-foreground">+18% from last week</p>
-                </CardContent>
-              </Card>
+        <TabsContent value="agents" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Agent Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Agent Name</TableHead>
+                    <TableHead>Total Clicks</TableHead>
+                    <TableHead>Valid Clicks</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {agentPerformance.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        No agent data available
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    agentPerformance.map((agent) => (
+                      <TableRow key={agent.agentId}>
+                        <TableCell className="font-medium">{agent.agentName}</TableCell>
+                        <TableCell>{agent.totalClicks}</TableCell>
+                        <TableCell>{agent.validClicks}</TableCell>
+                        <TableCell>
+                          <Link href={`/a/${agent.publicStatsToken}`} target="_blank">
+                            <Button variant="ghost" size="sm">
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Public Page
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Zones</CardTitle>
-                  <MapPin className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">12</div>
-                  <p className="text-xs text-muted-foreground">2 paused</p>
-                </CardContent>
-              </Card>
+        <TabsContent value="links" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tracked Links</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>Strategy</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {links.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        No links available
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    links.map((link) => (
+                      <TableRow key={link.id}>
+                        <TableCell className="font-medium font-mono">{link.slug}</TableCell>
+                        <TableCell className="capitalize">{link.destination_strategy}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded text-xs ${link.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
+                            {link.is_active ? "Active" : "Inactive"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(`${window.location.origin}/r/${link.slug}`)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Agents</CardTitle>
-                  <Users className="h-4 w-4 text-purple-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">45</div>
-                  <p className="text-xs text-muted-foreground">3 inactive</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Tracked Links</CardTitle>
-                  <Link2 className="h-4 w-4 text-orange-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">67</div>
-                  <p className="text-xs text-muted-foreground">All active</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Activation Details</CardTitle>
-                <CardDescription>Core information and settings</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Type</p>
-                    <p className="text-lg capitalize">{activation.type}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Status</p>
-                    <p className="text-lg capitalize">{activation.status}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Start Date</p>
-                    <p className="text-lg">
-                      {new Date(activation.start_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">End Date</p>
-                    <p className="text-lg">
-                      {new Date(activation.end_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <p className="text-sm font-medium text-muted-foreground">Default Landing URL</p>
-                    <p className="text-lg break-all">{activation.default_landing_url}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="zones">
-            <Card>
-              <CardHeader>
-                <CardTitle>Zones</CardTitle>
-                <CardDescription>Manage zones for this activation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Zone management interface placeholder</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="agents">
-            <Card>
-              <CardHeader>
-                <CardTitle>Agents</CardTitle>
-                <CardDescription>Manage agents for this activation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Agent management interface placeholder</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="links">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tracked Links</CardTitle>
-                <CardDescription>Manage tracked links for this activation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Link management interface placeholder</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="reports">
-            <Card>
-              <CardHeader>
-                <CardTitle>Reports</CardTitle>
-                <CardDescription>Export analytics and performance reports</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-2">Zone Performance Report</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Export daily metrics grouped by zone including clicks, uniques, and valid clicks.
-                    </p>
-                    <Button onClick={handleExportZones} className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export Zones CSV
-                    </Button>
-                  </div>
-
-                  <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-2">Agent Performance Report</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Export daily metrics grouped by agent including clicks, uniques, and valid clicks.
-                    </p>
-                    <Button onClick={handleExportAgents} className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export Agents CSV
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    <strong>Note:</strong> Reports include data from the last 7 days by default. 
-                    Custom date ranges coming soon.
+        <TabsContent value="reports" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Export Reports</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h3 className="font-semibold">Zone Performance Report</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Export detailed zone performance metrics as CSV
                   </p>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </AppLayout>
+                <Button onClick={() => downloadCSV("zones")}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Zones
+                </Button>
+              </div>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h3 className="font-semibold">Agent Performance Report</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Export detailed agent performance metrics as CSV
+                  </p>
+                </div>
+                <Button onClick={() => downloadCSV("agents")}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Agents
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
