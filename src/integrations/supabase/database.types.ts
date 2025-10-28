@@ -619,22 +619,8 @@ export type Database = {
           },
         ]
       }
-      rls_report: {
-        Row: {
-          cmd: string | null
-          permissive: string | null
-          policyname: unknown
-          qual: string | null
-          roles: unknown[] | null
-          schemaname: unknown
-          tablename: unknown
-          with_check: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
-      check_rls_enabled: { Args: { table_name: string }; Returns: Json }
       check_slug_available: {
         Args: { p_exclude_id?: string; p_slug: string }
         Returns: boolean
