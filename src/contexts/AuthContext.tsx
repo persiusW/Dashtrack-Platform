@@ -1,57 +1,45 @@
-
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+} from "react";
+import {
+  User,
+  Session,
+  createBrowserClient,
+} from "@supabase/ssr";
+import { Database } from "@/integrations/supabase/types";
 import { useRouter } from "next/router";
 
-interface UserProfile {
-  id: string;
-  organization_id: string;
-  role: "admin" | "client_manager" | "zone_supervisor" | "external_agent";
-}
-
-interface AuthContextType {
+type AuthContextType = {
   user: User | null;
-  profile: UserProfile | null;
   session: Session | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, organizationId: string, role: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  organizationId: string | null;
+  role: string | null;
+  isLoading: boolean;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
-}
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, organization_id, role")
-        .eq("id", userId)
-        .single();
-
-      if (error) throw error;
-      setProfile(data as UserProfile);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      setProfile(null);
-    }
-  };
-
-  const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
-    }
-  };
+  const supabase = useMemo(
+    () =>
+      createBrowserClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      ),
+    []
+  );
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -60,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id);
       }
-      setLoading(false);
+      setIsLoading(false);
     });
 
     const {
@@ -73,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
       }
-      setLoading(false);
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();

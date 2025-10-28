@@ -1,8 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
+import { createPagesServerClient } from "@supabase/ssr";
 import { Database } from "@/integrations/supabase/types";
 
-// The handler for creating an organization.
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -12,10 +11,8 @@ export default async function handler(
   }
 
   try {
-    // Create Supabase client with user session
     const supabase = createPagesServerClient<Database>({ req, res });
 
-    // Check authentication
     const {
       data: { user },
       error: authError,
@@ -31,16 +28,7 @@ export default async function handler(
 
     const { organizationName } = req.body;
 
-    // Validate organization name
-    if (!organizationName || typeof organizationName !== "string") {
-      return res.status(400).json({
-        ok: false,
-        error: "Invalid organization name",
-        details: "Organization name is required and must be a string",
-      });
-    }
-
-    if (organizationName.trim().length < 2) {
+    if (!organizationName || typeof organizationName !== "string" || organizationName.trim().length < 2) {
       return res.status(400).json({
         ok: false,
         error: "Invalid organization name",
@@ -48,10 +36,9 @@ export default async function handler(
       });
     }
 
-    // Create organization
     const { data: org, error: orgError } = await supabase
       .from("organizations")
-      .insert({ name: organizationName.trim(), plan: "free" })
+      .insert({ name: organizationName.trim() }) // plan defaults to 'free'; owner_user_id handled by policies/defaults
       .select("id")
       .single();
 
@@ -64,7 +51,6 @@ export default async function handler(
       });
     }
 
-    // Add a null check for the created organization
     if (!org) {
       return res.status(500).json({
         ok: false,
@@ -73,7 +59,6 @@ export default async function handler(
       });
     }
 
-    // Link user to organization
     const { error: userLinkError } = await supabase.from("users").upsert({
       id: user.id,
       organization_id: org.id,
@@ -82,7 +67,6 @@ export default async function handler(
 
     if (userLinkError) {
       console.error("User-organization link error:", userLinkError);
-      // Rollback: delete the organization
       await supabase.from("organizations").delete().eq("id", org.id);
       return res.status(500).json({
         ok: false,
