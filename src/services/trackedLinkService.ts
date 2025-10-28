@@ -1,9 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { qrService } from "./qrService";
 import type { Database } from "@/integrations/supabase/types";
 
-type TrackedLink = Database["public"]["Tables"]["tracked_links"]["Row"];
+export type TrackedLink = Database["public"]["Tables"]["tracked_links"]["Row"];
 type TrackedLinkInsert = Database["public"]["Tables"]["tracked_links"]["Insert"];
 type TrackedLinkUpdate = Database["public"]["Tables"]["tracked_links"]["Update"];
 
@@ -182,6 +181,20 @@ export const trackedLinkService = {
       .eq("id", id);
 
     if (error) throw error;
+  },
+
+  /**
+   * Get tracked links by activation
+   */
+  async getLinksByActivation(activationId: string): Promise<TrackedLink[]> {
+    const { data, error } = await supabase
+      .from("tracked_links")
+      .select("*")
+      .eq("activation_id", activationId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   },
 
   /**

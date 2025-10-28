@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
@@ -75,16 +74,30 @@ export default function UsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      const { data: usersData, error: usersError } = await supabase
         .from("users")
         .select(`
-          *,
+          id,
+          role,
+          organization_id,
+          created_at,
           organization:organizations(name)
-        `)
-        .order("created_at", { ascending: false });
+        `);
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (usersError) throw usersError;
+
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      if (authError) throw authError;
+
+      const authUserMap = new Map(authUsers.users.map(u => [u.id, u.email]));
+      
+      const combinedUsers = usersData?.map(u => ({
+        ...u,
+        email: authUserMap.get(u.id) || "N/A"
+      })) || [];
+
+      setUsers(combinedUsers as User[]);
     } catch (error) {
       console.error("Failed to load users:", error);
       toast({

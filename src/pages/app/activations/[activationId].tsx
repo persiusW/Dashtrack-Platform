@@ -55,7 +55,7 @@ export default function ActivationDetailPage() {
     try {
       setLoading(true);
       const [activationData, kpiData, timeSeriesData, zonesData, agentsData, linksData] = await Promise.all([
-        activationService.getActivationById(activationId),
+        activationService.getActivation(activationId),
         dashboardService.getActivationKPIs(activationId, filters.dateFrom, filters.dateTo),
         dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, activationId),
         dashboardService.getZonePerformance(activationId, filters.dateFrom, filters.dateTo),

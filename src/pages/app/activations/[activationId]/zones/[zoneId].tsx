@@ -53,7 +53,7 @@ export default function ZoneDetailPage() {
     try {
       setLoading(true);
       const [zoneData, kpiData, timeSeriesData, agentsData] = await Promise.all([
-        zoneService.getZoneById(zoneId),
+        zoneService.getZone(zoneId),
         dashboardService.getZoneKPIs(zoneId, filters.dateFrom, filters.dateTo),
         dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, activationId, zoneId),
         dashboardService.getZoneAgentLeaderboard(zoneId, filters.dateFrom, filters.dateTo),
