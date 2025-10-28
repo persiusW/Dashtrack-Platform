@@ -369,4 +369,84 @@ export const dashboardService = {
       }))
       .sort((a, b) => b.validClicks - a.validClicks);
   },
+
+  async getZoneKPIs(zoneId: string, dateFrom: string, dateTo: string): Promise<KPIData> {
+    const { data: clicks } = await supabase
+      .from("clicks")
+      .select("is_bot")
+      .eq("zone_id", zoneId)
+      .gte("created_at", `${dateFrom}T00:00:00Z`)
+      .lte("created_at", `${dateTo}T23:59:59Z`);
+
+    const { data: zoneAgents } = await supabase
+      .from("zone_agents")
+      .select("agent_id")
+      .eq("zone_id", zoneId);
+
+    return {
+      totalClicks: clicks?.length || 0,
+      validClicks: clicks?.filter((c) => !c.is_bot).length || 0,
+      totalAgents: zoneAgents?.length || 0,
+      activeActivations: 1,
+    };
+  },
+
+  async getZoneStandLinkPerformance(
+    zoneId: string,
+    dateFrom: string,
+    dateTo: string
+  ): Promise<{ standClicks: number; agentAverage: number }> {
+    const { data: zone } = await supabase
+      .from("zones")
+      .select("zone_stand_link_id")
+      .eq("id", zoneId)
+      .single();
+
+    if (!zone?.zone_stand_link_id) {
+      return { standClicks: 0, agentAverage: 0 };
+    }
+
+    const { data: standClicks } = await supabase
+      .from("clicks")
+      .select("is_bot")
+      .eq("tracked_link_id", zone.zone_stand_link_id)
+      .gte("created_at", `${dateFrom}T00:00:00Z`)
+      .lte("created_at", `${dateTo}T23:59:59Z`);
+
+    const { data: zoneAgents } = await supabase
+      .from("zone_agents")
+      .select("agent_id")
+      .eq("zone_id", zoneId);
+
+    const agentIds = zoneAgents?.map(za => za.agent_id) || [];
+    if (agentIds.length === 0) {
+      return {
+        standClicks: standClicks?.filter(c => !c.is_bot).length || 0,
+        agentAverage: 0,
+      };
+    }
+
+    const { data: agentClicks } = await supabase
+      .from("clicks")
+      .select("agent_id, is_bot")
+      .eq("zone_id", zoneId)
+      .in("agent_id", agentIds)
+      .gte("created_at", `${dateFrom}T00:00:00Z`)
+      .lte("created_at", `${dateTo}T23:59:59Z`);
+
+    const agentClickMap = new Map<string, number>();
+    agentClicks?.forEach(click => {
+      if (!click.is_bot) {
+        agentClickMap.set(click.agent_id, (agentClickMap.get(click.agent_id) || 0) + 1);
+      }
+    });
+
+    const totalAgentClicks = Array.from(agentClickMap.values()).reduce((sum, count) => sum + count, 0);
+    const agentAverage = agentClickMap.size > 0 ? totalAgentClicks / agentClickMap.size : 0;
+
+    return {
+      standClicks: standClicks?.filter(c => !c.is_bot).length || 0,
+      agentAverage,
+    };
+  },
 };

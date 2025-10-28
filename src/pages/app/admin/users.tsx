@@ -1,152 +1,225 @@
 
-import { AppLayout } from "@/components/layouts/AppLayout";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Plus, Search, Edit, Building2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { Users as UsersIcon, Shield } from "lucide-react";
 
-export default function AdminUsersPage() {
-  const users = [
-    {
-      id: "1",
-      email: "admin@acme.com",
-      role: "admin",
-      organization: "Acme Corporation",
-      created_at: "2024-01-15",
-    },
-    {
-      id: "2",
-      email: "manager@acme.com",
-      role: "client_manager",
-      organization: "Acme Corporation",
-      created_at: "2024-02-01",
-    },
-    {
-      id: "3",
-      email: "supervisor@techstart.com",
-      role: "zone_supervisor",
-      organization: "TechStart Inc",
-      created_at: "2024-03-22",
-    },
-    {
-      id: "4",
-      email: "manager@techstart.com",
-      role: "client_manager",
-      organization: "TechStart Inc",
-      created_at: "2024-03-25",
-    },
-  ];
+interface User {
+  id: string;
+  email: string;
+  role: string;
+  organization_id: string;
+  organization?: {
+    name: string;
+  };
+  created_at: string;
+}
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
-      case "client_manager":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-      case "zone_supervisor":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+export default function UsersPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      checkAdminAccess();
+    }
+  }, [user]);
+
+  const checkAdminAccess = async () => {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user?.id)
+      .single();
+
+    if (userData?.role !== "admin") {
+      toast({
+        title: "Access Denied",
+        description: "You do not have permission to access this page",
+        variant: "destructive",
+      });
+      router.push("/app/overview");
+      return;
+    }
+
+    loadUsers();
+  };
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("users")
+        .select(`
+          *,
+          organization:organizations(name)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error("Failed to load users:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load users",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              Users
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Admin: Manage all users across organizations
-            </p>
-          </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New User
-          </Button>
-        </div>
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({ role: newRole })
+        .eq("id", userId);
 
-        <Card>
-          <CardHeader>
-            <CardTitle>User Directory</CardTitle>
-            <CardDescription>Search and manage all users</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-2 mb-4">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search users..." className="flex-1" />
-            </div>
+      if (error) throw error;
 
-            <div className="space-y-3">
-              {users.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="font-semibold text-lg">{user.email}</h3>
-                      <Badge className={getRoleColor(user.role)}>
-                        {user.role.replace("_", " ").toUpperCase()}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <Building2 className="h-4 w-4 mr-1" />
-                        {user.organization}
-                      </div>
-                      <div>Joined: {new Date(user.created_at).toLocaleDateString()}</div>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      });
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{users.length}</div>
-              <p className="text-sm text-muted-foreground mt-1">Across all organizations</p>
-            </CardContent>
-          </Card>
+      loadUsers();
+    } catch (error) {
+      console.error("Failed to update user role:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update user role",
+        variant: "destructive",
+      });
+    }
+  };
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Admins</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {users.filter((u) => u.role === "admin").length}
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">System administrators</p>
-            </CardContent>
-          </Card>
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "bg-red-100 text-red-800";
+      case "client_manager":
+        return "bg-blue-100 text-blue-800";
+      case "zone_supervisor":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Client Managers</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {users.filter((u) => u.role === "client_manager").length}
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">Organization managers</p>
-            </CardContent>
-          </Card>
+  if (authLoading || !user || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>
-    </AppLayout>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">User Management</h1>
+        <p className="text-muted-foreground mt-1">
+          Manage user roles and permissions
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UsersIcon className="h-5 w-5" />
+            All Users
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Email</TableHead>
+                <TableHead>Organization</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    No users found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                users.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-medium">{u.email}</TableCell>
+                    <TableCell>{u.organization?.name || "N/A"}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded text-xs ${getRoleBadgeColor(u.role)}`}>
+                        {u.role.replace("_", " ")}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(u.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={u.role}
+                        onValueChange={(newRole) => handleRoleChange(u.id, newRole)}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">
+                            <div className="flex items-center gap-2">
+                              <Shield className="h-4 w-4" />
+                              Admin
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="client_manager">Client Manager</SelectItem>
+                          <SelectItem value="zone_supervisor">Zone Supervisor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
