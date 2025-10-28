@@ -22,16 +22,22 @@ const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing Supabase credentials in .env.local');
+  console.error('URL:', supabaseUrl);
+  console.error('Service Key:', supabaseServiceKey ? 'Present' : 'Missing');
   process.exit(1);
 }
 
 console.log('🔧 Using Supabase URL:', supabaseUrl);
+console.log('🔑 Service Key Length:', supabaseServiceKey.length);
 
-// Create Supabase admin client
+// Create Supabase admin client with service role (bypasses RLS)
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false
+  },
+  db: {
+    schema: 'public'
   }
 });
 
@@ -44,23 +50,19 @@ async function createTestUser() {
   const organizationName = 'Test Organization';
 
   try {
-    // Step 1: Create organization
-    console.log('📦 Step 1: Creating organization...');
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .insert([{ name: organizationName, plan: 'free' }])
-      .select()
-      .single();
-
-    if (orgError) {
-      console.error('❌ Organization creation failed:', orgError);
-      throw orgError;
+    // Step 1: Check if user already exists and clean up if needed
+    console.log('🔍 Checking for existing user...');
+    const { data: existingAuthUsers } = await supabase.auth.admin.listUsers();
+    const existingUser = existingAuthUsers?.users?.find(u => u.email === email);
+    
+    if (existingUser) {
+      console.log('⚠️  User already exists, deleting...');
+      await supabase.auth.admin.deleteUser(existingUser.id);
+      console.log('✅ Old user deleted');
     }
 
-    console.log('✅ Organization created:', org.id);
-
-    // Step 2: Create user in Auth
-    console.log('\n👤 Step 2: Creating user in auth.users...');
+    // Step 2: Create user in Auth FIRST
+    console.log('\n👤 Step 1: Creating user in auth.users...');
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: email,
       password: password,
@@ -77,7 +79,31 @@ async function createTestUser() {
 
     console.log('✅ Auth user created:', authData.user.id);
 
-    // Step 3: Create user record with organization link
+    // Step 3: Create organization using service role (bypasses RLS)
+    console.log('\n📦 Step 2: Creating organization with service role...');
+    const { data: org, error: orgError } = await supabase
+      .from('organizations')
+      .insert([{ 
+        name: organizationName, 
+        plan: 'free',
+        owner_user_id: authData.user.id
+      }])
+      .select()
+      .single();
+
+    if (orgError) {
+      console.error('❌ Organization creation failed:', orgError);
+      console.error('Full error:', JSON.stringify(orgError, null, 2));
+      
+      // Clean up auth user if org creation fails
+      console.log('🧹 Cleaning up auth user...');
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      throw orgError;
+    }
+
+    console.log('✅ Organization created:', org.id);
+
+    // Step 4: Create user record with organization link
     console.log('\n🔗 Step 3: Linking user to organization...');
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -91,6 +117,7 @@ async function createTestUser() {
 
     if (userError) {
       console.error('❌ User record creation failed:', userError);
+      console.error('Full error:', JSON.stringify(userError, null, 2));
       throw userError;
     }
 
@@ -98,12 +125,15 @@ async function createTestUser() {
 
     // Success summary
     console.log('\n✨ Test user created successfully!\n');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('📧 Email:', email);
     console.log('🔑 Password:', password);
     console.log('👤 User ID:', authData.user.id);
-    console.log('🏢 Organization:', organizationName, '(' + org.id + ')');
+    console.log('🏢 Organization:', organizationName);
+    console.log('🆔 Org ID:', org.id);
     console.log('🎭 Role: client_manager');
-    console.log('\n✅ You can now login with these credentials!\n');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('\n✅ You can now login at /app/overview with these credentials!\n');
 
   } catch (error) {
     console.error('\n❌ Error creating test user:', error);
