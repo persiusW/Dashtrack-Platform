@@ -246,19 +246,27 @@ export default async function handler(req, res) {
 Claims are automatically available in Postgres:
 
 ```sql
--- Helper function (already created in migrations)
-CREATE OR REPLACE FUNCTION auth.user_organization_id()
+-- Helper functions (already created in migrations)
+CREATE OR REPLACE FUNCTION public.current_user_organization_id()
 RETURNS UUID AS $$
   SELECT COALESCE(
     (current_setting('request.jwt.claims', true)::json->>'organization_id')::uuid,
     NULL
   );
-$$ LANGUAGE SQL STABLE;
+$$ LANGUAGE SQL STABLE SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+  SELECT COALESCE(
+    (current_setting('request.jwt.claims', true)::json->>'role') = 'admin',
+    false
+  );
+$$ LANGUAGE SQL STABLE SECURITY DEFINER;
 
 -- Usage in policies
 CREATE POLICY "Users see own org data"
   ON activations FOR SELECT
-  USING (organization_id = auth.user_organization_id());
+  USING (organization_id = public.current_user_organization_id());
 ```
 
 ## Testing Claims

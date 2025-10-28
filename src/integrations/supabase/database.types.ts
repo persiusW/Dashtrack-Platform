@@ -522,6 +522,7 @@ export type Database = {
       }
     }
     Functions: {
+      current_user_organization_id: { Args: never; Returns: string }
       get_agent_public_stats: {
         Args: { token: string }
         Returns: {
@@ -533,6 +534,7 @@ export type Database = {
           unique_links_used: number
         }[]
       }
+      is_admin: { Args: never; Returns: boolean }
       recompute_daily_metrics: { Args: never; Returns: undefined }
     }
     Enums: {

@@ -82,10 +82,10 @@ All tables have RLS enabled with the following policy structure:
 #### Organization Isolation
 ```sql
 -- Helper function extracts org_id from JWT
-auth.user_organization_id() -> UUID
+public.current_user_organization_id() -> UUID
 
 -- Standard policy pattern
-WHERE organization_id = auth.user_organization_id() OR auth.is_admin()
+WHERE organization_id = public.current_user_organization_id() OR public.is_admin()
 ```
 
 #### Role-Based Access
