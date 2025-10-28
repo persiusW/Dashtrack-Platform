@@ -18,6 +18,8 @@ import { useState } from "react";
 import { Database } from "@/integrations/supabase/types";
 
 type Agent = Database["public"]["Tables"]["agents"]["Row"];
+type AgentUpdatePayload = Omit<Partial<Agent>, "id" | "created_at" | "updated_at" | "organization_id" | "public_stats_token">;
+type AgentInsertPayload = Omit<Agent, "id" | "created_at" | "updated_at" | "organization_id" | "public_stats_token">;
 
 const agentSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -52,9 +54,19 @@ export function AgentForm({ agent, onSuccess }: AgentFormProps) {
     setError(null);
     try {
       if (agent) {
-        await agentService.updateAgent(agent.id, data);
+        const updateData: AgentUpdatePayload = {
+            ...data,
+            phone: data.phone || null,
+            email: data.email || null,
+        };
+        await agentService.updateAgent(agent.id, updateData);
       } else {
-        await agentService.createAgent(data);
+        const insertData: AgentInsertPayload = {
+            ...data,
+            phone: data.phone || null,
+            email: data.email || null,
+        }
+        await agentService.createAgent(insertData);
       }
       onSuccess();
     } catch (err: any) {

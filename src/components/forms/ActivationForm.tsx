@@ -26,6 +26,8 @@ import { Database } from "@/integrations/supabase/types";
 
 type Activation = Database["public"]["Tables"]["activations"]["Row"];
 type ActivationInsert = Omit<Activation, "id" | "created_at" | "updated_at" | "organization_id">;
+type ActivationStatus = "draft" | "live" | "paused" | "ended";
+type ActivationType = "single" | "multi";
 
 const activationSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -53,10 +55,10 @@ export function ActivationForm({ activation, onSuccess }: ActivationFormProps) {
     defaultValues: {
       name: activation?.name || "",
       description: activation?.description || "",
-      type: (activation?.type as "single" | "multi") || "single",
+      type: (activation?.type as ActivationType) || "single",
       start_at: activation?.start_at ? new Date(activation.start_at).toISOString().substring(0, 16) : "",
       end_at: activation?.end_at ? new Date(activation.end_at).toISOString().substring(0, 16) : "",
-      status: (activation?.status as "draft" | "live" | "paused" | "ended") || "draft",
+      status: (activation?.status as ActivationStatus) || "draft",
       default_landing_url: activation?.default_landing_url || "",
     },
   });
@@ -65,24 +67,18 @@ export function ActivationForm({ activation, onSuccess }: ActivationFormProps) {
     setLoading(true);
     setError(null);
     try {
-      const payload = {
+      const payload: Omit<Activation, "id" | "created_at" | "updated_at" | "organization_id"> & { start_at?: string, end_at?: string } = {
         ...data,
-        description: data.description || undefined,
-        start_at: data.start_at ? new Date(data.start_at).toISOString() : undefined,
-        end_at: data.end_at ? new Date(data.end_at).toISOString() : undefined,
+        description: data.description || null,
+        start_at: data.start_at ? new Date(data.start_at).toISOString() : null,
+        end_at: data.end_at ? new Date(data.end_at).toISOString() : null,
       };
 
       if (activation) {
         await activationService.updateActivation(activation.id, payload);
       } else {
         const createData: ActivationInsert = {
-          name: payload.name,
-          description: payload.description,
-          type: payload.type,
-          start_at: payload.start_at,
-          end_at: payload.end_at,
-          status: payload.status,
-          default_landing_url: payload.default_landing_url,
+            ...payload
         };
         await activationService.createActivation(createData);
       }
@@ -120,7 +116,7 @@ export function ActivationForm({ activation, onSuccess }: ActivationFormProps) {
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea {...field} />
+                <Textarea {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
