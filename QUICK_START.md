@@ -2,130 +2,133 @@
 
 ## 🚀 Getting Started
 
-### Test User Credentials
-A test user has been pre-created for you:
+This guide will help you set up your first test user and start using DashTrack.
 
-```
-Email:    test@example.com
-Password: password123
-Role:     client_manager
-```
+## Prerequisites
 
-### How to Login
-1. Navigate to the app homepage (/)
-2. Click "Sign In" 
-3. Enter the credentials above
-4. You'll be redirected to `/app/overview`
+- Supabase project connected to this application
+- Access to Supabase Dashboard
 
-### What You Can Do
-As a `client_manager`, you have access to:
-- ✅ **Overview Dashboard** - View analytics and KPIs
-- ✅ **Activations** - Create and manage campaigns
-- ✅ **Zones** - Create zones within activations
-- ✅ **Agents** - Manage field agents
-- ✅ **Tracked Links** - Create trackable QR codes and links
-- ✅ **Reports** - Export CSV reports
+## Step 1: Create Test User in Supabase Dashboard
 
-### Creating Your First Activation
+Since the service role key authentication is currently having issues, we'll create the test user manually through the Supabase Dashboard:
 
-1. Go to `/app/activations`
-2. Click "Create Activation"
-3. Fill in:
-   - Name (e.g., "Spring Campaign 2025")
-   - Description
-   - Type (single or multi)
-   - Start/End dates
-   - Default landing URL (fallback for untracked links)
-4. Click "Create"
+### 1.1 Create Auth User
 
-### Creating Zones
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project: **oznnxfrbrimslfwnwwpu**
+3. Navigate to **Authentication → Users**
+4. Click **"Add User"** → **"Create New User"**
+5. Enter the following details:
+   - **Email:** `test@example.com`
+   - **Password:** `password123`
+   - **☑️ Check "Auto Confirm User"** (important!)
+6. Click **"Create User"**
+7. **Copy the User ID** that appears (you'll need this in the next step)
 
-1. Navigate to an activation detail page
-2. Go to the "Zones" tab
-3. Click "Create Zone"
-4. Fill in:
-   - Zone name (e.g., "Downtown Store")
-   - Address (optional)
-   - Lat/Lng coordinates (optional)
-5. Click "Create"
+### 1.2 Link User to Organization
 
-### Creating Tracked Links
+1. In Supabase Dashboard, navigate to **SQL Editor**
+2. Click **"New Query"**
+3. Paste the following SQL (replace `<USER_ID>` with the ID you copied):
 
-1. Go to activation detail → "Links" tab
-2. Click "Create Link"
-3. Configure:
-   - Slug (unique identifier for URL)
-   - Destination strategy:
-     - **Single:** One URL for all devices
-     - **Smart:** Different URLs for iOS/Android/fallback
-   - Optional: Assign to zone or agent
-4. Click "Create"
-5. A QR code will be automatically generated!
-
-### Public Agent Stats Page
-
-Each agent has a unique public stats page at:
-```
-/a/{public_stats_token}
+```sql
+-- Insert user record linking to Test Organization
+INSERT INTO users (id, organization_id, role)
+VALUES (
+  '<USER_ID>',  -- Replace with the actual User ID from step 1.1
+  '2aa07f2f-3a86-4961-9103-e6a9050a2885',  -- Test Organization ID
+  'client_manager'
+);
 ```
 
-This page shows:
-- Agent name and contact info
-- Their unique QR code
-- Last 7 days click statistics
-- Time series chart
+4. Click **"Run"** to execute the query
 
-**No login required!** Perfect for sharing with external agents.
+## Step 2: Login to DashTrack
 
-## 🔧 Technical Details
+1. Open the DashTrack application
+2. Use these credentials:
+   - **Email:** `test@example.com`
+   - **Password:** `password123`
+3. You should now be logged in as a Client Manager
 
-### Architecture
-- **Frontend:** Next.js 15 (Page Router) + TypeScript + Tailwind CSS
-- **Backend:** Supabase (PostgreSQL + Auth + Storage)
-- **Multi-tenancy:** Row-level security based on `organization_id`
-- **RBAC:** Roles: admin, client_manager, zone_supervisor, external_agent
+## Test Organization Details
 
-### Database Schema
-See `BACKEND_README.md` for complete schema documentation.
+- **Organization Name:** Test Organization
+- **Organization ID:** `2aa07f2f-3a86-4961-9103-e6a9050a2885`
+- **Plan:** Free
 
-### Environment Variables
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-NEXT_PUBLIC_SITE_URL=your_site_url
+## Troubleshooting
+
+### "Invalid login credentials" error
+
+**Cause:** The user wasn't created with "Auto Confirm User" checked, or the users table entry is missing.
+
+**Solution:**
+1. Go to Supabase Dashboard → Authentication → Users
+2. Find `test@example.com` and click the three dots → "Send confirmation email" OR delete and recreate with "Auto Confirm User" checked
+3. Verify the users table entry exists (run the SQL from Step 1.2 again)
+
+### "Database error querying schema" error
+
+**Cause:** The users table entry exists but there's a mismatch in the user ID.
+
+**Solution:**
+1. Get the correct User ID from Supabase Dashboard → Authentication → Users
+2. Update the users table:
+```sql
+UPDATE users 
+SET id = '<CORRECT_USER_ID>'
+WHERE organization_id = '2aa07f2f-3a86-4961-9103-e6a9050a2885';
 ```
 
-## 🐛 Troubleshooting
+### "Invalid API key" during signup
 
-### "Database error querying schema" during login
-See `docs/SUPABASE_AUTH_HOOK_SETUP.md` for detailed fix instructions.
+**Cause:** The Supabase service role key needs to be refreshed.
 
-**Quick fix:**
-1. Go to Supabase Dashboard → Authentication → Hooks
-2. Remove any "Custom Access Token" hooks
-3. Try logging in again
+**Solution:**
+1. Click "Fetch API Keys" in the Supabase integration settings
+2. Try signup again
 
-### Preview not loading
-1. Click the "Restart Server" button in Softgen settings (top right)
-2. Or run: `pm2 restart all`
+## Next Steps
 
-### RLS Policy Errors
-The helper functions have been updated to handle missing JWT claims gracefully:
-- `current_user_organization_id()` - Falls back to querying users table
-- `is_admin()` - Falls back to querying users table
+Once logged in, you can:
 
-## 📚 Additional Documentation
+1. **Create an Activation** (`/app/activations`)
+   - Set up your first marketing campaign
+   - Define activation dates and landing URLs
 
-- `BACKEND_README.md` - Complete backend architecture and API reference
-- `docs/JWT_SETUP.md` - JWT claims configuration
-- `docs/SUPABASE_AUTH_HOOK_SETUP.md` - Auth hooks troubleshooting
+2. **Add Zones** (within an activation)
+   - Create geographical zones for tracking
+   - Assign zone-specific links
 
-## 🎯 Next Steps
+3. **Register Agents** (`/app/activations/[id]/agents`)
+   - Add team members who will distribute materials
+   - Each agent gets a unique tracking link
 
-1. **Try logging in** with the test credentials
-2. **Create your first activation** to see the workflow
-3. **Generate a tracked link** and test the redirect at `/r/{slug}`
-4. **View analytics** on the overview dashboard
+4. **Generate Tracked Links** (`/app/links`)
+   - Create QR codes for print materials
+   - Set up smart device-specific redirects
 
-Need help? The system is designed to be intuitive - explore the interface and the tooltips will guide you!
+5. **View Analytics** (`/app/overview`)
+   - Monitor clicks and engagement
+   - Filter by date range, activation, or zone
+
+## User Roles
+
+- **admin**: Full system access, can manage all organizations
+- **client_manager**: Manage activations, zones, agents, and links within their organization
+- **zone_supervisor**: View and manage specific zones (limited access)
+- **external_agent**: No login access; agents view their stats via public link
+
+## Support
+
+If you encounter issues:
+1. Check the Supabase Dashboard for user confirmation status
+2. Verify the users table entry exists and matches the auth.users ID
+3. Check browser console for detailed error messages
+4. Restart the Next.js server: `pm2 restart all`
+
+---
+
+**Last Updated:** 2025-10-28
