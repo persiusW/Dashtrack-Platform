@@ -33,7 +33,7 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Building2 } from "lucide-react";
 
 type Organization = {
-  created_at: string | null;
+  created_at: string;
   id: string;
   name: string;
   owner_user_id: string | null;
@@ -44,6 +44,7 @@ type Organization = {
 export default function AdminOrganizationsPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -199,7 +200,7 @@ export default function AdminOrganizationsPage() {
                     <TableCell className="font-medium">{org.name}</TableCell>
                     <TableCell>
                       <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 capitalize">
-                        {org.plan}
+                        {org.plan || "N/A"}
                       </span>
                     </TableCell>
                     <TableCell>

@@ -6,8 +6,8 @@ import {
   useMemo,
   useCallback,
 } from "react";
-import { type User, type Session } from "@supabase/supabase-js";
-import { createBrowserClient } from "@supabase/supabase-js";
+import { type User, type Session, type AuthChangeEvent } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import { Database, Tables } from "@/integrations/supabase/types";
 import { useRouter } from "next/router";
 
@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {

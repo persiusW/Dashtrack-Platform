@@ -17,11 +17,12 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { AppLayout } from "@/components/layouts/AppLayout";
 
 export default function ZoneDetailsPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { zoneId } = router.query;
+  const { activationId, zoneId } = router.query;
   const { filters } = useGlobalFilters();
 
   const [zone, setZone] = useState<any>(null);
@@ -49,7 +50,7 @@ export default function ZoneDetailsPage() {
         const [zoneData, kpiData, timeSeriesData, agentsData] = await Promise.all([
           zoneService.getZone(zoneId),
           dashboardService.getZoneKPIs(zoneId, filters.dateFrom, filters.dateTo),
-          dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, activationId, zoneId),
+          dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, activationId as string, zoneId),
           dashboardService.getZoneAgentLeaderboard(zoneId, filters.dateFrom, filters.dateTo),
         ]);
 

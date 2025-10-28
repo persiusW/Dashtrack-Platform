@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
+import { AppLayout } from "@/components/layouts/AppLayout";
 
 export default function ActivationDetailsPage() {
   const router = useRouter();

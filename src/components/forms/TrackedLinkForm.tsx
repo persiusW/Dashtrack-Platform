@@ -12,7 +12,7 @@ import { trackedLinkService } from "@/services/trackedLinkService";
 import { zoneService } from "@/services/zoneService";
 import { agentService } from "@/services/agentService";
 import { activationService } from "@/services/activationService";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Tables } from "@/integrations/supabase/types";
 import { qrService } from "@/services/qrService";
 import { QrCode, Download } from "lucide-react";
 

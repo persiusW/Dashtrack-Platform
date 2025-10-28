@@ -18,7 +18,7 @@ import { MousePointerClick, CheckCircle2, Users, Zap } from "lucide-react";
 export default function OverviewPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const { filters, setFilters, dateRangeOptions } = useGlobalFilters();
+  const { filters } = useGlobalFilters();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

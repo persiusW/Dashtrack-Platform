@@ -118,6 +118,53 @@ export default function AdminUsersPage() {
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      setIsLoading(true);
+
+      const { data: usersData, error: usersError } = await supabase
+        .from("users")
+        .select(`
+          id,
+          role,
+          organization_id,
+          created_at,
+          organization:organizations(name)
+        `);
+
+      if (usersError) throw usersError;
+
+      const { data: { users: authUserList }, error: authError } = await supabase.auth.admin.listUsers();
+      if (authError) throw authError;
+
+      const authUserMap = new Map<string, string | undefined>();
+      for (const u of authUserList) {
+        if (u.id) {
+            authUserMap.set(u.id, u.email);
+        }
+      }
+      
+      const combinedUsers = usersData?.map(u => ({
+        ...u,
+        email: authUserMap.get(u.id) || "N/A"
+      })) || [];
+
+      setUsers(combinedUsers as UserProfile[]);
+    } catch (error) {
+      console.error("Failed to load users:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load users",
+        variant: "destructive",
+      });
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case "admin":
