@@ -1,6 +1,5 @@
-
 import { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 // Email validation regex - more permissive
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -14,30 +13,6 @@ export default async function handler(
   }
 
   try {
-    // Read environment variables fresh on each request to avoid caching issues
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Missing environment variables:", {
-        hasUrl: !!supabaseUrl,
-        hasServiceKey: !!supabaseServiceKey,
-        serviceKeyPrefix: supabaseServiceKey?.substring(0, 20),
-      });
-      return res.status(500).json({ 
-        error: "Server configuration error",
-        details: "Missing Supabase credentials" 
-      });
-    }
-
-    // Create admin client fresh on each request with service role key to bypass RLS
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
-
     const { email, password, fullName, organizationName } = req.body;
 
     // Log the incoming request (without password)
@@ -145,6 +120,7 @@ export default async function handler(
       });
       
       // Rollback: delete the organization if user creation fails
+      console.log("Rolling back organization creation...");
       await supabaseAdmin.from("organizations").delete().eq("id", orgData.id);
       
       // Provide more specific error message
@@ -163,6 +139,7 @@ export default async function handler(
 
     if (!authData?.user) {
       console.error("No user data returned from auth creation");
+      console.log("Rolling back organization creation...");
       await supabaseAdmin.from("organizations").delete().eq("id", orgData.id);
       return res.status(500).json({ error: "Failed to create user account - no user data returned" });
     }
@@ -188,6 +165,7 @@ export default async function handler(
         details: userError.details,
       });
       // Rollback: delete auth user and organization
+      console.log("Rolling back auth user and organization creation...");
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       await supabaseAdmin.from("organizations").delete().eq("id", orgData.id);
       return res.status(500).json({ 
@@ -216,6 +194,8 @@ export default async function handler(
         code: profileError.code,
       });
       // Note: Profile is less critical, so we don't rollback everything
+      // but we should log it for monitoring
+      console.warn("Continuing despite profile creation failure - this is non-critical");
     } else {
       console.log("Profile created successfully");
     }

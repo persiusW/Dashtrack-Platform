@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -675,6 +675,7 @@ export type Database = {
             }
             Returns: undefined
           }
+      whoami: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never
