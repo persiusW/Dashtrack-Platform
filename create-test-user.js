@@ -1,13 +1,26 @@
 
 import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Get the directory name for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables from .env.local
+dotenv.config({ path: join(__dirname, '.env.local') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing environment variables!');
-  console.log('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'Set' : 'Missing');
-  console.log('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? 'Set' : 'Missing');
+  console.error('❌ Missing environment variables!');
+  console.log('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✓ Set' : '✗ Missing');
+  console.log('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✓ Set' : '✗ Missing');
+  console.log('\nMake sure .env.local contains:');
+  console.log('- NEXT_PUBLIC_SUPABASE_URL');
+  console.log('- SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
 
@@ -25,6 +38,7 @@ async function createTestUser() {
   const fullName = 'Test User';
 
   try {
+    console.log('🚀 Starting test user creation...\n');
     console.log('Step 1: Checking if user already exists...');
     
     // Check if user exists
@@ -32,18 +46,20 @@ async function createTestUser() {
     const existingUser = existingUsers?.users?.find(u => u.email === email);
     
     if (existingUser) {
-      console.log('User already exists with ID:', existingUser.id);
+      console.log('⚠️  User already exists with ID:', existingUser.id);
       console.log('Deleting existing user first...');
       
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
       if (deleteError) {
-        console.error('Error deleting existing user:', deleteError);
+        console.error('❌ Error deleting existing user:', deleteError);
         process.exit(1);
       }
-      console.log('Existing user deleted successfully');
+      console.log('✅ Existing user deleted successfully\n');
+    } else {
+      console.log('✅ No existing user found\n');
     }
 
-    console.log('\nStep 2: Creating auth user...');
+    console.log('Step 2: Creating auth user...');
     
     // Create auth user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -56,18 +72,18 @@ async function createTestUser() {
     });
 
     if (authError) {
-      console.error('Auth error:', authError);
+      console.error('❌ Auth error:', authError);
       process.exit(1);
     }
 
     if (!authData?.user) {
-      console.error('No user data returned');
+      console.error('❌ No user data returned');
       process.exit(1);
     }
 
-    console.log('✅ Auth user created with ID:', authData.user.id);
+    console.log('✅ Auth user created with ID:', authData.user.id, '\n');
 
-    console.log('\nStep 3: Creating user record...');
+    console.log('Step 3: Creating user record...');
     
     // Create user record
     const { error: userError } = await supabaseAdmin.from('users').insert([
@@ -79,15 +95,15 @@ async function createTestUser() {
     ]);
 
     if (userError) {
-      console.error('User record error:', userError);
-      // Rollback
+      console.error('❌ User record error:', userError);
+      console.log('Rolling back auth user...');
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       process.exit(1);
     }
 
-    console.log('✅ User record created');
+    console.log('✅ User record created\n');
 
-    console.log('\nStep 4: Creating profile record...');
+    console.log('Step 4: Creating profile record...');
     
     // Create profile
     const { error: profileError } = await supabaseAdmin.from('profiles').insert([
@@ -99,21 +115,23 @@ async function createTestUser() {
     ]);
 
     if (profileError) {
-      console.error('Profile error (non-fatal):', profileError);
+      console.error('⚠️  Profile error (non-fatal):', profileError);
     } else {
       console.log('✅ Profile created');
     }
 
-    console.log('\n🎉 SUCCESS! Test user created:');
-    console.log('   Email:', email);
-    console.log('   Password:', password);
-    console.log('   User ID:', authData.user.id);
-    console.log('   Organization ID:', orgId);
-    console.log('   Role: client_manager');
-    console.log('\nYou can now sign in at: http://localhost:3000');
+    console.log('\n🎉 SUCCESS! Test user created successfully!\n');
+    console.log('═══════════════════════════════════════');
+    console.log('📧 Email:          ', email);
+    console.log('🔑 Password:       ', password);
+    console.log('👤 User ID:        ', authData.user.id);
+    console.log('🏢 Organization ID:', orgId);
+    console.log('👔 Role:           ', 'client_manager');
+    console.log('═══════════════════════════════════════');
+    console.log('\n✨ You can now sign in at: http://localhost:3000\n');
 
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('❌ Unexpected error:', error);
     process.exit(1);
   }
 }
