@@ -1,7 +1,6 @@
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-import { createPagesServerClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 
 const createOrgSchema = z.object({
   organizationName: z.string().min(2, 'Organization name must be at least 2 characters'),
@@ -18,7 +17,7 @@ export default async function handler(
   }
 
   try {
-    const supabase = createPagesServerClient({ req, res });
+    const supabase = createServerClient({ req, res });
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 

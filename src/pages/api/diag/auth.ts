@@ -1,5 +1,4 @@
-
-import { createPagesServerClient } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
@@ -11,7 +10,7 @@ export default async function handler(
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  const supabase = createPagesServerClient({ req, res });
+  const supabase = createServerClient({ req, res });
 
   const env = {
     NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
