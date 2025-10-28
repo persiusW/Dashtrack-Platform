@@ -1,7 +1,8 @@
-
 import { GetServerSideProps } from "next";
-import { supabase } from "@/integrations/supabase/client";
-import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/ssr";
+import { ParsedUrlQuery } from "querystring";
+import { clickService } from "@/services/clickService";
+import { trackedLinkService } from "@/services/trackedLinkService";
 
 interface TrackedLink {
   id: string;
@@ -34,7 +35,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const referrer = context.req.headers.referer || context.req.headers.referrer || "";
 
   try {
-    const supabaseAdmin = createServerSupabaseClient(context, {
+    const supabaseAdmin = createServerClient(context, {
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
       supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY!
     });

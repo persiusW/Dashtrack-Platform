@@ -4,22 +4,28 @@ import {
   useEffect,
   useState,
   useMemo,
+  useCallback,
 } from "react";
-import {
-  User,
-  Session,
-  createBrowserClient,
-} from "@supabase/ssr";
-import { Database } from "@/integrations/supabase/types";
+import { type User, type Session } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
+import { Database, Tables } from "@/integrations/supabase/types";
 import { useRouter } from "next/router";
+
+// Define a profile type
+export type Profile = Tables<"users">;
 
 type AuthContextType = {
   user: User | null;
   session: Session | null;
+  profile: Profile | null;
   organizationId: string | null;
   role: string | null;
   isLoading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<any>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +34,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,31 +48,62 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     []
   );
 
+  const fetchProfile = useCallback(
+    async (userId: string) => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        setProfile(null);
+        setOrganizationId(null);
+        setRole(null);
+      } else if (data) {
+        setProfile(data);
+        setOrganizationId(data.organization_id);
+        setRole(data.role);
+      }
+      setIsLoading(false);
+    },
+    [supabase]
+  );
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const getInitialSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        await fetchProfile(session.user.id);
       }
       setIsLoading(false);
-    });
+    };
+
+    getInitialSession();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        await fetchProfile(session.user.id);
       } else {
         setProfile(null);
+        setOrganizationId(null);
+        setRole(null);
       }
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabase, fetchProfile]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -75,25 +113,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) throw error;
   };
 
-  const signUp = async (email: string, password: string, organizationId: string, role: string) => {
+  const signUp = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
     if (error) throw error;
-
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from("users")
-        .insert([
-          {
-            id: data.user.id,
-            organization_id: organizationId,
-            role,
-          },
-        ]);
-      if (profileError) throw profileError;
-    }
+    return data;
   };
 
   const signInWithGoogle = async () => {
@@ -108,27 +134,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setProfile(null);
+    setOrganizationId(null);
+    setRole(null);
     router.push("/");
   };
 
+  const refreshProfile = () => {
+    if (user) {
+      fetchProfile(user.id);
+    }
+  };
+
+  const value: AuthContextType = {
+    user,
+    session,
+    profile,
+    organizationId,
+    role,
+    isLoading,
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signOut,
+    refreshProfile,
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        profile,
-        session,
-        loading,
-        signIn,
-        signUp,
-        signInWithGoogle,
-        signOut,
-        refreshProfile,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
   );
-}
+};
 
 export function useAuth() {
   const context = useContext(AuthContext);
