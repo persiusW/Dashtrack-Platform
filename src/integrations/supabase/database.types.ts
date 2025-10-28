@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
+ 
 export type Json =
   | string
   | number
@@ -626,6 +626,7 @@ export type Database = {
         Returns: boolean
       }
       current_user_organization_id: { Args: never; Returns: string }
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       get_agent_public_stats: {
         Args: { token: string }
         Returns: {
