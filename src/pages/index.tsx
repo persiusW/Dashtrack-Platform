@@ -71,6 +71,8 @@ export default function Landing() {
       </section>
 
       {/* Features Grid */}
+      <hr className="my-12 border-gray-200 mx-auto max-w-6xl" />
+      
       <section id="features" className="mx-auto max-w-6xl px-6 py-12">
         <h2 className="text-xl font-semibold text-center sm:text-left">
           Why teams use DasHttp Track
@@ -108,6 +110,8 @@ export default function Landing() {
       </section>
 
       {/* How It Works */}
+      <hr className="my-12 border-gray-200 mx-auto max-w-6xl" />
+      
       <section id="how" className="mx-auto max-w-6xl px-6 py-12">
         <h2 className="text-xl font-semibold text-center sm:text-left">
           How it works
@@ -141,6 +145,8 @@ export default function Landing() {
       </section>
 
       {/* Dashboard Preview Card */}
+      <hr className="my-12 border-gray-200 mx-auto max-w-6xl" />
+      
       <section className="mx-auto max-w-6xl px-6 pb-12">
         <div className="rounded-3xl border bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-4">
