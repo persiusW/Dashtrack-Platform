@@ -70,8 +70,8 @@ export default function SignupPage() {
         return;
       }
 
-      // Success! Redirect to app
-      router.replace("/app/overview");
+      // Success! Redirect to app with full page reload to ensure session is established
+      window.location.href = "/app/overview";
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
       setLoading(false);

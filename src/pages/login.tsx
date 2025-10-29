@@ -30,7 +30,9 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace(redirectTo);
+    // Use window.location.href to force a full page reload with fresh session cookies
+    // This ensures the middleware can properly detect the authenticated session
+    window.location.href = redirectTo;
   }
 
   return (
