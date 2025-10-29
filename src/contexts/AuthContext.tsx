@@ -21,7 +21,6 @@ type AuthContextType = {
   organizationId: string | null;
   role: string | null;
   isLoading: boolean;
-  loading: boolean; // Add this
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<any>;
   signInWithGoogle: () => Promise<void>;
@@ -56,7 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .from("users")
         .select("*")
         .eq("id", userId)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error("Error fetching profile:", error);
@@ -67,12 +66,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProfile(data);
         setOrganizationId(data.organization_id);
         setRole(data.role);
-      } else {
-        // User doesn't exist in users table yet
-        console.log("User profile not found in users table");
-        setProfile(null);
-        setOrganizationId(null);
-        setRole(null);
       }
       setIsLoading(false);
     },
@@ -160,7 +153,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     organizationId,
     role,
     isLoading,
-    loading: isLoading, // Provide it here
     signIn,
     signUp,
     signInWithGoogle,
