@@ -70,19 +70,11 @@ export default function SignupPage() {
         return;
       }
 
-      // Wait for session to be fully established
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Success! Wait for auth state to propagate then redirect
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Verify session is established
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        // Success! Redirect to app
-        router.push("/app/overview");
-      } else {
-        setError("Session failed to establish. Please try logging in.");
-        setLoading(false);
-      }
+      // Force a full page navigation to trigger middleware
+      window.location.href = "/app/overview";
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
       setLoading(false);

@@ -30,19 +30,13 @@ export default function LoginPage() {
       return;
     }
 
-    // Wait a moment for cookies to be set, then refresh session
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Let the auth state change listener handle the redirect
+    // The middleware will redirect authenticated users to /app/overview
+    // Just wait a moment for the auth state to update
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Verify session is established
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (session) {
-      // Session confirmed, now redirect
-      router.push(redirectTo);
-    } else {
-      setError("Session failed to establish. Please try again.");
-      setLoading(false);
-    }
+    // Force a full page navigation to trigger middleware
+    window.location.href = redirectTo;
   }
 
   return (
