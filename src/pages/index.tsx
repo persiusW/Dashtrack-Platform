@@ -131,9 +131,67 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Dashboard Preview Card */}
+      <section className="mx-auto max-w-6xl px-6 pb-12">
+        <div className="rounded-3xl border bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="font-medium">Clean, Real-Time Dashboard</div>
+              <p className="text-sm text-gray-600">
+                View valid clicks over time, top zones & agents instantly.
+              </p>
+            </div>
+            <Link
+              href="/app/overview"
+              className="px-4 py-2 rounded-lg border hover:bg-gray-50 text-sm transition-colors"
+            >
+              View Live Demo
+            </Link>
+          </div>
+
+          <div className="mt-4 h-56 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border flex items-center justify-center text-gray-400 text-sm">
+            (Dashboard Preview Placeholder)
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Band */}
+      <section className="mx-auto max-w-6xl px-6 pb-16">
+        <div className="rounded-2xl border bg-black text-white p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <div className="font-medium">Ready to measure real-world impact?</div>
+            <p className="text-sm text-white/80">Start your first activation today.</p>
+          </div>
+          <div className="flex gap-3">
+            <Link
+              href="/signup"
+              className="bg-white text-black px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Get Started
+            </Link>
+            <Link
+              href="/login"
+              className="px-4 py-2 rounded-lg border border-white/30 hover:bg-white/10 transition-colors"
+            >
+              Log in
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="mt-auto border-t py-6 text-center text-sm text-gray-500">
-        © {new Date().getFullYear()} DasHttp Track
+      <footer className="mt-auto border-t py-6">
+        <div className="mx-auto max-w-6xl px-6 text-sm text-gray-500 flex items-center justify-between">
+          <span>© {new Date().getFullYear()} DasHttp</span>
+          <div className="space-x-4">
+            <Link className="underline hover:text-gray-700 transition-colors" href="/terms">
+              Terms
+            </Link>
+            <Link className="underline hover:text-gray-700 transition-colors" href="/privacy">
+              Privacy
+            </Link>
+          </div>
+        </div>
       </footer>
     </main>
   );
