@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/router";
@@ -14,6 +14,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Listen for auth state changes and redirect when session is confirmed
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Use window.location.assign for reliable redirect that picks up new session
+        window.location.assign(redirectTo);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase, redirectTo]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,7 +43,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace(redirectTo);
+    // Don't redirect here - let the onAuthStateChange handler do it
+    // This ensures session is fully established before redirect
   }
 
   return (
