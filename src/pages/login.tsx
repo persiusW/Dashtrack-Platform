@@ -30,9 +30,19 @@ export default function LoginPage() {
       return;
     }
 
-    // Use window.location.href to force a full page reload with fresh session cookies
-    // This ensures the middleware can properly detect the authenticated session
-    window.location.href = redirectTo;
+    // Wait a moment for cookies to be set, then refresh session
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Verify session is established
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session) {
+      // Session confirmed, now redirect
+      router.push(redirectTo);
+    } else {
+      setError("Session failed to establish. Please try again.");
+      setLoading(false);
+    }
   }
 
   return (

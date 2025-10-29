@@ -70,8 +70,19 @@ export default function SignupPage() {
         return;
       }
 
-      // Success! Redirect to app with full page reload to ensure session is established
-      window.location.href = "/app/overview";
+      // Wait for session to be fully established
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Verify session is established
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // Success! Redirect to app
+        router.push("/app/overview");
+      } else {
+        setError("Session failed to establish. Please try logging in.");
+        setLoading(false);
+      }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
       setLoading(false);
