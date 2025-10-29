@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .from("users")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching profile:", error);
@@ -66,6 +66,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProfile(data);
         setOrganizationId(data.organization_id);
         setRole(data.role);
+      } else {
+        // User doesn't exist in users table yet
+        console.log("User profile not found in users table");
+        setProfile(null);
+        setOrganizationId(null);
+        setRole(null);
       }
       setIsLoading(false);
     },
