@@ -32,7 +32,9 @@ export function LoginForm() {
 
     try {
       await signIn(email, password);
-      router.push("/app/overview");
+      // CRITICAL: Use window.location.assign for full page reload
+      // This ensures middleware picks up the new session reliably
+      window.location.assign("/app/overview");
     } catch (err: any) {
       setError(err.message || "Failed to sign in");
     } finally {
