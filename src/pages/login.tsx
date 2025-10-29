@@ -19,24 +19,30 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      setError(error.message);
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+
+      // Wait longer for session to be fully established
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Use router.replace for client-side navigation
+      // This will trigger the middleware to check auth and redirect if needed
+      router.replace(redirectTo);
+      
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("An unexpected error occurred. Please try again.");
       setLoading(false);
-      return;
     }
-
-    // Let the auth state change listener handle the redirect
-    // The middleware will redirect authenticated users to /app/overview
-    // Just wait a moment for the auth state to update
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Force a full page navigation to trigger middleware
-    window.location.href = redirectTo;
   }
 
   return (

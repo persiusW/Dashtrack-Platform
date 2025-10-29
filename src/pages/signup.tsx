@@ -70,12 +70,14 @@ export default function SignupPage() {
         return;
       }
 
-      // Success! Wait for auth state to propagate then redirect
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Success! Wait longer for auth state to propagate
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Force a full page navigation to trigger middleware
-      window.location.href = "/app/overview";
+      // Use router.replace for client-side navigation
+      router.replace("/app/overview");
+      
     } catch (err) {
+      console.error("Signup error:", err);
       setError("An unexpected error occurred. Please try again.");
       setLoading(false);
     }
