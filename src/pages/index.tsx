@@ -172,21 +172,21 @@ export default function Landing() {
 
       {/* CTA Band */}
       <section className="mx-auto max-w-6xl px-6 pb-16">
-        <div className="rounded-2xl border bg-black text-white p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="rounded-2xl border bg-gradient-to-r from-black via-gray-900 to-gray-800 text-white p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-lg">
           <div>
-            <div className="font-medium">Ready to measure real-world impact?</div>
-            <p className="text-sm text-white/80">Start your first activation today.</p>
+            <div className="font-medium text-lg">Ready to measure real-world impact?</div>
+            <p className="text-sm text-white/80">Start your first activation in minutes.</p>
           </div>
           <div className="flex gap-3">
             <Link
               href="/signup"
-              className="bg-white text-black px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
+              className="bg-white text-black px-5 py-2 rounded-lg hover:opacity-90 font-medium transition-opacity"
             >
               Get Started
             </Link>
             <Link
               href="/login"
-              className="px-4 py-2 rounded-lg border border-white/30 hover:bg-white/10 transition-colors"
+              className="px-5 py-2 rounded-lg border border-white/30 hover:bg-white/10 font-medium transition-colors"
             >
               Log in
             </Link>
