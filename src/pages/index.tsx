@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, Share2, Wifi, Link2 } from "lucide-react";
+import { MapPin, Share2, Wifi, Link2, FolderPlus, Users, BarChart3 } from "lucide-react";
 
 const Bullet = ({ children }: { children: React.ReactNode }) => (
   <div className="rounded-xl border bg-white p-3 text-sm">{children}</div>
@@ -126,32 +126,38 @@ export default function Landing() {
       <hr className="my-12 border-gray-200 mx-auto max-w-6xl" />
       
       <section id="how" className="mx-auto max-w-6xl px-6 py-12">
-        <h2 className="text-xl font-semibold text-center sm:text-left">
+        <h2 className="text-xl font-semibold text-center sm:text-left mb-8">
           How it works
         </h2>
 
-        <div className="mt-6 grid gap-5 sm:grid-cols-3">
-          <div className="rounded-2xl border bg-white p-5">
-            <div className="text-xs font-medium text-gray-500">Step 1</div>
-            <div className="mt-1 font-medium">Create Activation & Zones</div>
-            <p className="mt-1 text-sm text-gray-600">
-              Set dates, landing page, and assign supervisors.
+        <div className="grid gap-6 sm:grid-cols-3">
+          <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-2">
+              <FolderPlus className="w-5 h-5 text-indigo-500" />
+              <div className="font-medium">Create Activations & Zones</div>
+            </div>
+            <p className="text-sm text-gray-600">
+              Set up campaigns, assign supervisors, and configure zone locations.
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-white p-5">
-            <div className="text-xs font-medium text-gray-500">Step 2</div>
-            <div className="mt-1 font-medium">Add Agents & Generate Links</div>
-            <p className="mt-1 text-sm text-gray-600">
-              Each agent gets a unique link + QR image automatically.
+          <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-2">
+              <Users className="w-5 h-5 text-indigo-500" />
+              <div className="font-medium">Add Agents & Generate Links</div>
+            </div>
+            <p className="text-sm text-gray-600">
+              Each agent gets a unique link and QR code automatically.
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-white p-5">
-            <div className="text-xs font-medium text-gray-500">Step 3</div>
-            <div className="mt-1 font-medium">Track & Optimize</div>
-            <p className="mt-1 text-sm text-gray-600">
-              Monitor clicks by zone or agent and export CSV reports.
+          <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-2">
+              <BarChart3 className="w-5 h-5 text-indigo-500" />
+              <div className="font-medium">Track & Optimize</div>
+            </div>
+            <p className="text-sm text-gray-600">
+              View real-time performance metrics and optimize top-performing zones.
             </p>
           </div>
         </div>
