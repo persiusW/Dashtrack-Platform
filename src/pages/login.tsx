@@ -1,4 +1,3 @@
-"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
@@ -15,37 +14,56 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Listen for auth state changes and redirect when session is confirmed
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        // Use window.location.assign for reliable redirect that picks up new session
-        window.location.assign(redirectTo);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase, redirectTo]);
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
+    
     setError("");
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    // 1) Call sign-in
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    // 2) Handle failure early
     if (error) {
-      setError(error.message);
       setLoading(false);
+      setError(error.message || "Login failed");
       return;
     }
 
-    // Don't redirect here - let the onAuthStateChange handler do it
-    // This ensures session is fully established before redirect
+    // 3) Force a hard reload so middleware sees the new cookie
+    window.location.assign(redirectTo);
   }
+
+  // Safety net: if a session already exists, jump to dashboard
+  useEffect(() => {
+    let cancelled = false;
+
+    // check once at mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!cancelled && session) window.location.assign(redirectTo);
+    });
+
+    // subscribe to auth changes
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) window.location.assign(redirectTo);
+    });
+
+    // deadman timer: if something stalls, try a fetch-based confirm
+    const t = setTimeout(async () => {
+      const r = await fetch("/api/diag/auth").then(r => r.json()).catch(() => null);
+      if (r?.session_present) window.location.assign(redirectTo);
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+      sub.subscription.unsubscribe();
+    };
+  }, [supabase, redirectTo]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
@@ -102,7 +120,7 @@ export default function LoginPage() {
         </button>
 
         <div className="text-sm text-center text-gray-600">
-          Don't have an account?{" "}
+          No account?{" "}
           <Link href="/signup" className="underline font-medium text-black">
             Sign up
           </Link>
