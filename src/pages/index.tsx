@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MapPin, Share2, Wifi, Link2 } from "lucide-react";
 
 const Bullet = ({ children }: { children: React.ReactNode }) => (
   <div className="rounded-xl border bg-white p-3 text-sm">{children}</div>
@@ -74,35 +75,47 @@ export default function Landing() {
       <hr className="my-12 border-gray-200 mx-auto max-w-6xl" />
       
       <section id="features" className="mx-auto max-w-6xl px-6 py-12">
-        <h2 className="text-xl font-semibold text-center sm:text-left">
+        <h2 className="text-xl font-semibold text-center sm:text-left mb-8">
           Why teams use DasHttp Track
         </h2>
 
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm hover:shadow-md transition-shadow">
-            <h3 className="font-medium">Multi-Zone Activations</h3>
-            <p className="mt-1 text-sm text-gray-600">
+            <div className="flex items-center gap-3 mb-2">
+              <MapPin className="w-5 h-5 text-indigo-500" />
+              <h3 className="font-medium">Multi-Zone Activations</h3>
+            </div>
+            <p className="text-sm text-gray-600">
               Organize campaigns by zones with supervisors and on-ground agents.
             </p>
           </div>
 
           <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm hover:shadow-md transition-shadow">
-            <h3 className="font-medium">Agent Attribution</h3>
-            <p className="mt-1 text-sm text-gray-600">
+            <div className="flex items-center gap-3 mb-2">
+              <Share2 className="w-5 h-5 text-indigo-500" />
+              <h3 className="font-medium">Agent Attribution</h3>
+            </div>
+            <p className="text-sm text-gray-600">
               Auto-generated links & QR codes per agent with transparent stats.
             </p>
           </div>
 
           <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm hover:shadow-md transition-shadow">
-            <h3 className="font-medium">NFC & Smart Posters</h3>
-            <p className="mt-1 text-sm text-gray-600">
+            <div className="flex items-center gap-3 mb-2">
+              <Wifi className="w-5 h-5 text-indigo-500" />
+              <h3 className="font-medium">NFC & Smart Posters</h3>
+            </div>
+            <p className="text-sm text-gray-600">
               Compare tap-through rates by sticker tagline or zone stand.
             </p>
           </div>
 
           <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm hover:shadow-md transition-shadow">
-            <h3 className="font-medium">Smart Redirects</h3>
-            <p className="mt-1 text-sm text-gray-600">
+            <div className="flex items-center gap-3 mb-2">
+              <Link2 className="w-5 h-5 text-indigo-500" />
+              <h3 className="font-medium">Smart Redirects</h3>
+            </div>
+            <p className="text-sm text-gray-600">
               Send users to the right store or landing page automatically.
             </p>
           </div>
