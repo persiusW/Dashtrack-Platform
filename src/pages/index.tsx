@@ -195,14 +195,14 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="mt-auto border-t py-6">
+      <footer className="mt-auto border-t border-gray-200 py-6 bg-gradient-to-r from-gray-50 to-white">
         <div className="mx-auto max-w-6xl px-6 text-sm text-gray-500 flex items-center justify-between">
           <span>© {new Date().getFullYear()} DasHttp</span>
           <div className="space-x-4">
-            <Link className="underline hover:text-gray-700 transition-colors" href="/terms">
+            <Link className="underline hover:text-black transition-colors" href="/terms">
               Terms
             </Link>
-            <Link className="underline hover:text-gray-700 transition-colors" href="/privacy">
+            <Link className="underline hover:text-black transition-colors" href="/privacy">
               Privacy
             </Link>
           </div>
