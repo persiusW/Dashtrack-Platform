@@ -21,6 +21,7 @@ type AuthContextType = {
   organizationId: string | null;
   role: string | null;
   isLoading: boolean;
+  loading: boolean; // Add this
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<any>;
   signInWithGoogle: () => Promise<void>;
@@ -159,6 +160,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     organizationId,
     role,
     isLoading,
+    loading: isLoading, // Provide it here
     signIn,
     signUp,
     signInWithGoogle,
