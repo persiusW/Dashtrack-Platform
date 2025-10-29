@@ -5,20 +5,25 @@ import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
-  const { data: { session } } = await supabase.auth.getSession();
 
-  const p = req.nextUrl.pathname;
-  const isApp = p.startsWith("/app");
-  const isAuth = p === "/login" || p === "/signup";
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  if (isApp && !session) {
+  const pathname = req.nextUrl.pathname;
+  const isAppRoute = pathname.startsWith("/app");
+  const isAuthRoute = pathname === "/login" || pathname === "/signup";
+
+  // If accessing /app/* without session, redirect to /login
+  if (isAppRoute && !session) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", p);
+    url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  if (isAuth && session) {
+  // If accessing /login or /signup with session, redirect to /app/overview
+  if (isAuthRoute && session) {
     const url = req.nextUrl.clone();
     url.pathname = "/app/overview";
     return NextResponse.redirect(url);
@@ -28,5 +33,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/login", "/signup"]
+  matcher: ["/app/:path*", "/login", "/signup"],
 };
