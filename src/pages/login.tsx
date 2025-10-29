@@ -1,14 +1,13 @@
-"use client";
 import { useState } from "react";
 import Link from "next/link";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/router";
 
 export default function LoginPage() {
   const supabase = createClientComponentClient();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const next = searchParams?.get("next") || "/app/overview";
+  const { next } = router.query;
+  const redirectTo = (next as string) || "/app/overview";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,9 +49,19 @@ export default function LoginPage() {
         return;
       }
 
-      // CRITICAL: Use window.location.href for full page reload
-      // This ensures middleware picks up the new session
-      window.location.href = next;
+      // Wait for session to be fully written
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Verify session is readable
+      const { data: sessionCheck } = await supabase.auth.getSession();
+      if (!sessionCheck.session) {
+        setError("Session created but not persisting. Try refreshing the page.");
+        setLoading(false);
+        return;
+      }
+
+      // Force full page reload to ensure middleware picks up the session
+      window.location.href = redirectTo;
       
     } catch (err: any) {
       console.error("Login error:", err);
