@@ -31,7 +31,7 @@ export default function Landing() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#EEF2FF] via-white to-white" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#EEF2FF] via-white to-white" />
 
         <div className="relative mx-auto max-w-6xl px-6 py-20 sm:py-28 text-center">
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-black via-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -67,7 +67,7 @@ export default function Landing() {
           </div>
 
           {/* Accent circles */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-r from-indigo-100 to-transparent blur-3xl opacity-40" />
+          <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-r from-indigo-100 to-transparent blur-3xl opacity-40" />
         </div>
       </section>
 
