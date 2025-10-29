@@ -70,11 +70,11 @@ export default function SignupPage() {
         return;
       }
 
-      // Success! Wait longer for auth state to propagate
+      // Success! Wait for auth state to propagate
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Use router.replace for client-side navigation
-      router.replace("/app/overview");
+      // Force a full page reload to ensure middleware sees the session
+      window.location.href = "/app/overview";
       
     } catch (err) {
       console.error("Signup error:", err);

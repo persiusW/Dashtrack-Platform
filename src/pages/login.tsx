@@ -31,12 +31,11 @@ export default function LoginPage() {
         return;
       }
 
-      // Wait longer for session to be fully established
+      // Wait for session to be fully established
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Use router.replace for client-side navigation
-      // This will trigger the middleware to check auth and redirect if needed
-      router.replace(redirectTo);
+      // Force a full page reload to ensure middleware sees the session
+      window.location.href = redirectTo;
       
     } catch (err) {
       console.error("Login error:", err);
