@@ -8,7 +8,7 @@ export default function LoginPage() {
   const supabase = createClientComponentClient();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/app/overview";
+  const next = searchParams?.get("next") || "/app/overview";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
