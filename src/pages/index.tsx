@@ -77,28 +77,28 @@ export default function Landing() {
         </h2>
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm hover:shadow-md transition-shadow">
             <h3 className="font-medium">Multi-Zone Activations</h3>
             <p className="mt-1 text-sm text-gray-600">
               Organize campaigns by zones with supervisors and on-ground agents.
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm hover:shadow-md transition-shadow">
             <h3 className="font-medium">Agent Attribution</h3>
             <p className="mt-1 text-sm text-gray-600">
               Auto-generated links & QR codes per agent with transparent stats.
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm hover:shadow-md transition-shadow">
             <h3 className="font-medium">NFC & Smart Posters</h3>
             <p className="mt-1 text-sm text-gray-600">
               Compare tap-through rates by sticker tagline or zone stand.
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm hover:shadow-md transition-shadow">
             <h3 className="font-medium">Smart Redirects</h3>
             <p className="mt-1 text-sm text-gray-600">
               Send users to the right store or landing page automatically.
