@@ -20,7 +20,7 @@ export async function middleware(req: NextRequest) {
 
   if (isAuth && session) {
     const url = req.nextUrl.clone();
-    url.pathname = "/app/overview";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 

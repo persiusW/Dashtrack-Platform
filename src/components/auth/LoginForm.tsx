@@ -34,7 +34,7 @@ export function LoginForm() {
       await signIn(email, password);
       // CRITICAL: Use window.location.assign for full page reload
       // This ensures middleware picks up the new session reliably
-      window.location.assign("/app/overview");
+      window.location.assign("/dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to sign in");
     } finally {
