@@ -1,10 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export async function GET(_req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<{ session_present: boolean } | { error: string }>
+) {
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
+  const supabase = createPagesServerClient({ req, res });
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
   const ok = !!session;
-  return NextResponse.json({ session_present: ok });
+
+  return res.status(200).json({ session_present: ok });
 }
