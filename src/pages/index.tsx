@@ -28,25 +28,31 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="relative">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-gray-50 via-white to-white" />
-        <div className="relative mx-auto max-w-6xl px-6 py-16 sm:py-20">
-          <h1 className="text-4xl sm:text-5xl font-bold text-center">
-            Track activations with QR/NFC. Attribute results by zone & agent.
+      <section className="relative overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#EEF2FF] via-white to-white" />
+
+        <div className="relative mx-auto max-w-6xl px-6 py-20 sm:py-28 text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-black via-gray-800 to-gray-600 bg-clip-text text-transparent">
+            Track activations with QR/NFC.<br className="hidden sm:block" /> Attribute
+            results by zone & agent.
           </h1>
-          <p className="mt-4 text-center text-gray-600 max-w-2xl mx-auto">
-            Create activations, assign zones & agents, generate unique links/QR codes, and see live performance in one dashboard.
+
+          <p className="mt-5 text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            Create activations, assign zones & agents, generate unique links/QR codes,
+            and see live performance in one dashboard.
           </p>
+
           <div className="mt-8 flex justify-center gap-3">
             <Link
               href="/signup"
-              className="bg-black text-white px-5 py-2.5 rounded-lg hover:bg-gray-800 transition-colors"
+              className="bg-gradient-to-r from-black via-gray-900 to-gray-700 text-white px-6 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
             >
               Start free
             </Link>
             <Link
               href="/login"
-              className="px-5 py-2.5 rounded-lg border hover:bg-gray-50 transition-colors"
+              className="px-6 py-2.5 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
             >
               Log in
             </Link>
@@ -58,6 +64,9 @@ export default function Landing() {
             <Bullet>• Smart redirects (iOS/Android/fallback)</Bullet>
             <Bullet>• Live analytics & CSV exports</Bullet>
           </div>
+
+          {/* Accent circles */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-r from-indigo-100 to-transparent blur-3xl opacity-40" />
         </div>
       </section>
 
