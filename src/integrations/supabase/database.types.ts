@@ -154,10 +154,80 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "clicks_activation_id_fkey"
+            columns: ["activation_id"]
+            isOneToOne: false
+            referencedRelation: "activation_agent_report"
+            referencedColumns: ["activation_id"]
+          },
+          {
+            foreignKeyName: "clicks_activation_id_fkey"
+            columns: ["activation_id"]
+            isOneToOne: false
+            referencedRelation: "activation_zone_report"
+            referencedColumns: ["activation_id"]
+          },
+          {
+            foreignKeyName: "clicks_activation_id_fkey"
+            columns: ["activation_id"]
+            isOneToOne: false
+            referencedRelation: "activations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clicks_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "activation_agent_report"
+            referencedColumns: ["agent_id"]
+          },
+          {
+            foreignKeyName: "clicks_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clicks_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "public_agent_stats"
+            referencedColumns: ["agent_id"]
+          },
+          {
+            foreignKeyName: "clicks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "clicks_tracked_link_id_fkey"
             columns: ["tracked_link_id"]
             isOneToOne: false
             referencedRelation: "tracked_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clicks_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "activation_agent_report"
+            referencedColumns: ["zone_id"]
+          },
+          {
+            foreignKeyName: "clicks_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "activation_zone_report"
+            referencedColumns: ["zone_id"]
+          },
+          {
+            foreignKeyName: "clicks_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
             referencedColumns: ["id"]
           },
         ]
@@ -619,8 +689,22 @@ export type Database = {
           },
         ]
       }
+      rls_report: {
+        Row: {
+          cmd: string | null
+          permissive: string | null
+          policyname: unknown
+          qual: string | null
+          roles: unknown[] | null
+          schemaname: unknown
+          tablename: unknown
+          with_check: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      check_rls_enabled: { Args: { table_name: string }; Returns: Json }
       check_slug_available: {
         Args: { p_exclude_id?: string; p_slug: string }
         Returns: boolean
