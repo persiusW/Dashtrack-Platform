@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserSupabaseClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/router";
 
 export default function LoginPage() {
-  const supabase = createClientComponentClient();
+  const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const router = useRouter();
   const { next } = router.query;
   const redirectTo = (next as string) || "/app/overview";
@@ -21,20 +21,18 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    // 1) Call sign-in
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    // 2) Handle failure early
     if (error) {
       setLoading(false);
       setError(error.message || "Login failed");
       return;
     }
 
-    // 3) Force a hard reload so middleware sees the new cookie
+    // Force reload so middleware sees cookies
     window.location.assign(redirectTo);
   }
 
