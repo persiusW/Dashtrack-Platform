@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layouts/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,8 +15,70 @@ import {
   TopAgent,
 } from "@/services/dashboardService";
 import { MousePointerClick, CheckCircle2, Users, Zap } from "lucide-react";
+import type { GetServerSideProps } from "next";
+import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
+import { Button } from "@/components/ui/button";
+import QuickCreateDialog from "@/components/forms/QuickCreateDialog";
 
-export default function OverviewPage() {
+type OverviewProps = {
+  initialActivationsCount: number;
+};
+
+export const getServerSideProps: GetServerSideProps<OverviewProps> = async (ctx) => {
+  const supabase = createPagesServerClient(ctx);
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return {
+      redirect: { destination: "/login?next=/app/overview", permanent: false },
+    };
+  }
+
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData?.user?.id || null;
+
+  let organizationId: string | null = null;
+
+  if (userId) {
+    const { data: userRow } = await supabase
+      .from("users")
+      .select("organization_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (userRow?.organization_id) {
+      organizationId = userRow.organization_id;
+    }
+  }
+
+  if (!organizationId) {
+    const metaOrg = (userData?.user as any)?.app_metadata?.organization_id as string | undefined;
+    if (metaOrg) {
+      organizationId = metaOrg;
+    }
+  }
+
+  let activationsCount = 0;
+
+  if (organizationId) {
+    const { count } = await supabase
+      .from("activations")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId);
+
+    activationsCount = count ?? 0;
+  }
+
+  return {
+    props: {
+      initialActivationsCount: activationsCount,
+    },
+  };
+};
+
+export default function OverviewPage({ initialActivationsCount }: OverviewProps) {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { filters } = useGlobalFilters();
@@ -27,6 +88,7 @@ export default function OverviewPage() {
   const [timeSeries, setTimeSeries] = useState<TimeSeriesData[]>([]);
   const [topZones, setTopZones] = useState<TopZone[]>([]);
   const [topAgents, setTopAgents] = useState<TopAgent[]>([]);
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -77,6 +139,36 @@ export default function OverviewPage() {
             <p className="mt-4 text-muted-foreground">Loading...</p>
           </div>
         </div>
+      </AppLayout>
+    );
+  }
+
+  if (initialActivationsCount === 0) {
+    return (
+      <AppLayout>
+        <div className="container mx-auto p-6">
+          <div className="mx-auto max-w-2xl text-center bg-white dark:bg-gray-800 border rounded-xl p-10">
+            <h1 className="text-2xl font-bold">Create your first activation</h1>
+            <p className="text-muted-foreground mt-2">
+              You don&apos;t have any activations yet. Create one to start tracking zones, agents, and links.
+            </p>
+            <div className="mt-6">
+              <Button onClick={() => setShowQuickCreate(true)}>Create Activation</Button>
+            </div>
+          </div>
+        </div>
+
+        <QuickCreateDialog
+          open={showQuickCreate}
+          onOpenChange={setShowQuickCreate}
+          onCreated={(id) => {
+            if (id) {
+              window.location.assign(`/app/activations/${id}`);
+            } else {
+              window.location.assign("/app/activations");
+            }
+          }}
+        />
       </AppLayout>
     );
   }
@@ -167,4 +259,3 @@ export default function OverviewPage() {
     </AppLayout>
   );
 }
-  
