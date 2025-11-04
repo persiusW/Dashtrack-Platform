@@ -32,7 +32,12 @@ export default function LoginPage() {
       return;
     }
 
-    // Force reload so middleware sees cookies
+    try {
+      await fetch("/api/auth/callback", { method: "POST" });
+    } catch {
+      // ignore; hard redirect will still work
+    }
+
     window.location.assign(redirectTo);
   }
 

@@ -31,7 +31,7 @@ export default function Landing() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#EEF2FF] via-white to-white" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#EEF2FF] via-white to-white" />
 
         <div className="relative mx-auto max-w-6xl px-6 py-20 sm:py-28 text-center">
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-black via-gray-800 to-gray-600 bg-clip-text text-transparent">
