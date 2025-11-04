@@ -9,16 +9,23 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, email, organization_id")
+    .select("id, full_name, email")
     .eq("id", user.id)
     .maybeSingle();
 
-  let organization = null as null | { id: string; name: string };
-  if (profile?.organization_id) {
+  let organization: null | { id: string; name: string } = null;
+
+  const { data: userRow } = await supabase
+    .from("users")
+    .select("organization_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (userRow?.organization_id) {
     const { data: org } = await supabase
       .from("organizations")
       .select("id, name")
-      .eq("id", profile.organization_id)
+      .eq("id", userRow.organization_id)
       .maybeSingle();
     organization = org ?? null;
   }
