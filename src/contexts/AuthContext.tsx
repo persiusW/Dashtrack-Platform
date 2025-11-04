@@ -1,174 +1,102 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useMemo,
-  useCallback,
-} from "react";
-import { type User, type Session, type AuthChangeEvent } from "@supabase/supabase-js";
-import { createBrowserClient } from "@supabase/ssr";
-import { Database, Tables } from "@/integrations/supabase/types";
-import { useRouter } from "next/router";
 
-// Define a profile type
-export type Profile = Tables<"users">;
+"use client";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import type { Session, User } from "@supabase/supabase-js";
+import { createBrowserSupabaseClient } from "@supabase/auth-helpers-nextjs";
 
-type AuthContextType = {
+interface AppProfile {
+  role?: "admin" | "client_manager" | "zone_supervisor" | string;
+  organization_id?: string;
+  plan?: "free" | "pro" | "enterprise" | string;
+  email?: string;
+  full_name?: string;
+}
+interface AuthContextValue {
   user: User | null;
   session: Session | null;
-  profile: Profile | null;
-  organizationId: string | null;
-  role: string | null;
-  isLoading: boolean;
+  loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<any>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
-  refreshProfile: () => void;
-};
+  profile: AppProfile | null;
+  isLoading: boolean;
+}
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  session: null,
+  loading: true,
+  signIn: async () => {},
+  signInWithGoogle: async () => {},
+  signOut: async () => {},
+  profile: null,
+  isLoading: true,
+});
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const router = useRouter();
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
-  const [role, setRole] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [profile] = useState<AppProfile | null>(null);
 
-  const supabase = useMemo(
-    () =>
-      createBrowserClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      ),
-    []
-  );
-
-  const fetchProfile = useCallback(
-    async (userId: string) => {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching profile:", error);
-        setProfile(null);
-        setOrganizationId(null);
-        setRole(null);
-      } else if (data) {
-        setProfile(data);
-        setOrganizationId(data.organization_id);
-        setRole(data.role);
-      }
-      setIsLoading(false);
-    },
-    [supabase]
-  );
-
+  // Initialize session and user
   useEffect(() => {
-    const getInitialSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setSession(session);
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+      setSession(session ?? null);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      }
-      setIsLoading(false);
-    };
-
-    getInitialSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setOrganizationId(null);
-        setRole(null);
-      }
-      setIsLoading(false);
+      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, [supabase, fetchProfile]);
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession ?? null);
+      setUser(newSession?.user ?? null);
+    });
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-  };
-
-  const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (error) throw error;
-    return data;
+    const sessionNow = data?.session;
+    if (sessionNow) {
+      try {
+        await fetch("/api/auth/callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            access_token: sessionNow.access_token,
+            refresh_token: sessionNow.refresh_token,
+          }),
+        });
+      } catch {}
+    }
   };
 
   const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/app/overview`,
-      },
+      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
     });
     if (error) throw error;
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setProfile(null);
-    setOrganizationId(null);
-    setRole(null);
-    router.push("/");
   };
 
-  const refreshProfile = () => {
-    if (user) {
-      fetchProfile(user.id);
-    }
-  };
+  const value: AuthContextValue = { user, session, loading, signIn, signInWithGoogle, signOut, profile, isLoading: loading };
 
-  const value: AuthContextType = {
-    user,
-    session,
-    profile,
-    organizationId,
-    role,
-    isLoading,
-    signIn,
-    signUp,
-    signInWithGoogle,
-    signOut,
-    refreshProfile,
-  };
-
-  return (
-    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-  );
-};
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  return useContext(AuthContext);
 }

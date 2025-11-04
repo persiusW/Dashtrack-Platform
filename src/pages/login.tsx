@@ -32,10 +32,21 @@ export default function LoginPage() {
       return;
     }
 
-    try {
-      await fetch("/api/auth/callback", { method: "POST" });
-    } catch {
-      // ignore; hard redirect will still work
+    const session = data?.session;
+    if (session) {
+      try {
+        await fetch("/api/auth/callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          }),
+        });
+      } catch {
+        // ignore; hard redirect will still work
+      }
     }
 
     window.location.assign(redirectTo);

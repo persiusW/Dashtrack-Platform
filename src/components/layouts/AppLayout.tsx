@@ -138,8 +138,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                   {user?.email}
                 </p>
                 {profile && (
-                  <Badge variant="secondary" className={`text-xs mt-1 ${getRoleColor(profile.role)}`}>
-                    {profile.role.replace("_", " ")}
+                  <Badge
+                    variant="secondary"
+                    className={`text-xs mt-1 ${getRoleColor(profile.role ?? "")}`}
+                  >
+                    {(profile.role ?? "member").replace("_", " ")}
                   </Badge>
                 )}
               </div>

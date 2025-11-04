@@ -9,31 +9,13 @@ export function useSubscriptionGate(feature: string) {
 
   useEffect(() => {
     if (profile) {
-      // Admins bypass all checks
       if (profile.role === 'admin') {
         setIsAllowed(true);
         setIsChecking(false);
         return;
       }
-      
-      // For v1, we only show a banner if plan is free, but don't block.
       if (profile.organization_id && profile.role !== 'admin') {
-         // This logic would check against a features-by-plan map
-         // For now, let's assume 'free' plan has limited access but we don't block
-         // A real implementation would be:
-         // const planFeatures = getFeaturesForPlan(profile.plan);
-         // if (planFeatures.includes(feature)) {
-         //   setIsAllowed(true);
-         // } else {
-         //   setIsAllowed(false);
-         //   setMessage(`Upgrade to access this feature.`);
-         // }
-         
-         // V1 logic: allow all, show message for free plan
-         setIsAllowed(true); 
-        //  if(profile.plan === 'free'){
-        //      setMessage("This is a premium feature. Upgrade your plan for full access.");
-        //  }
+         setIsAllowed(true);
       }
     }
     setIsChecking(false);
