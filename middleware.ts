@@ -14,7 +14,6 @@ export async function middleware(req: NextRequest) {
   const isAppRoute = pathname.startsWith("/app");
   const isAuthRoute = pathname === "/login" || pathname === "/signup";
 
-  // If accessing /app/* without session, redirect to /login
   if (isAppRoute && !session) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
@@ -22,7 +21,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If accessing /login or /signup with session, redirect to /app/overview
   if (isAuthRoute && session) {
     const url = req.nextUrl.clone();
     url.pathname = "/app/overview";

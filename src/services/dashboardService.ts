@@ -152,7 +152,7 @@ export const dashboardService = {
 
     const { data } = await supabase
       .from("clicks")
-      .select("zone_id, is_bot, zones!inner(id, name)")
+      .select("zone_id, is_bot, zones!clicks_zone_id_fkey (id, name)")
       .gte("created_at", `${dateFrom}T00:00:00Z`)
       .lte("created_at", `${dateTo}T23:59:59Z`)
       .not("zone_id", "is", null);
@@ -182,7 +182,7 @@ export const dashboardService = {
 
     const { data } = await supabase
       .from("clicks")
-      .select("agent_id, is_bot, agents!inner(id, name, public_stats_token)")
+      .select("agent_id, is_bot, agents!clicks_agent_id_fkey (id, name, public_stats_token)")
       .gte("created_at", `${dateFrom}T00:00:00Z`)
       .lte("created_at", `${dateTo}T23:59:59Z`)
       .not("agent_id", "is", null);
@@ -245,7 +245,7 @@ export const dashboardService = {
   async getZonePerformance(activationId: string, dateFrom: string, dateTo: string): Promise<ZonePerformance[]> {
     const { data } = await supabase
       .from("clicks")
-      .select("zone_id, is_bot, ip, zones!inner(id, name)")
+      .select("zone_id, is_bot, ip, zones!clicks_zone_id_fkey (id, name)")
       .eq("activation_id", activationId)
       .gte("created_at", `${dateFrom}T00:00:00Z`)
       .lte("created_at", `${dateTo}T23:59:59Z`)
@@ -283,7 +283,7 @@ export const dashboardService = {
   async getAgentPerformance(activationId: string, dateFrom: string, dateTo: string): Promise<AgentPerformance[]> {
     const { data } = await supabase
       .from("clicks")
-      .select("agent_id, is_bot, agents!inner(id, name, public_stats_token)")
+      .select("agent_id, is_bot, agents!clicks_agent_id_fkey (id, name, public_stats_token)")
       .eq("activation_id", activationId)
       .gte("created_at", `${dateFrom}T00:00:00Z`)
       .lte("created_at", `${dateTo}T23:59:59Z`)
@@ -354,7 +354,7 @@ export const dashboardService = {
 
     const { data } = await supabase
       .from("clicks")
-      .select("agent_id, is_bot, agents!inner(id, name, public_stats_token)")
+      .select("agent_id, is_bot, agents!clicks_agent_id_fkey (id, name, public_stats_token)")
       .eq("zone_id", zoneId)
       .in("agent_id", agentIds)
       .gte("created_at", `${dateFrom}T00:00:00Z`)
