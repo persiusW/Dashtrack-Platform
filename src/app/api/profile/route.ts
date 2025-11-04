@@ -5,35 +5,50 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 export async function GET() {
   const supabase = createRouteHandlerClient({ cookies });
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!user) return NextResponse.json({ ok:false, error:"Unauthorized" }, { status:401 });
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, email")
+    .select("id, full_name, email, organization_id")
     .eq("id", user.id)
     .maybeSingle();
+
+  const email = user.email ?? profile?.email ?? null;
 
   let organization: null | { id: string; name: string } = null;
+  let orgDetectedBy = "profile";
 
-  const { data: userRow } = await supabase
-    .from("users")
-    .select("organization_id")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (userRow?.organization_id) {
+  if (profile?.organization_id) {
     const { data: org } = await supabase
       .from("organizations")
       .select("id, name")
-      .eq("id", userRow.organization_id)
+      .eq("id", profile.organization_id)
       .maybeSingle();
-    organization = org ?? null;
+    if (org) organization = org;
   }
 
-  const email = user.email ?? profile?.email ?? null;
+  if (!organization) {
+    const { data: ownedOrg } = await supabase
+      .from("organizations")
+      .select("id, name")
+      .eq("owner_user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (ownedOrg) {
+      organization = ownedOrg;
+      orgDetectedBy = "owner";
+    }
+  }
+
   return NextResponse.json({
     ok: true,
-    data: { email, full_name: profile?.full_name ?? "", organization }
+    data: {
+      email,
+      full_name: profile?.full_name ?? "",
+      organization,
+      org_detected_by: organization ? orgDetectedBy : null
+    }
   });
 }
 

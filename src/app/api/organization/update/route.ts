@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
@@ -24,21 +23,38 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  // Resolve organization_id from users mapping (canonical in this codebase)
-  const { data: userRow, error: userErr } = await supabase
-    .from("users")
+  // Prefer profiles.organization_id
+  const { data: profile, error: profErr } = await supabase
+    .from("profiles")
     .select("organization_id")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (userErr) {
-    return NextResponse.json({ ok: false, error: userErr.message }, { status: 400 });
+  if (profErr) {
+    return NextResponse.json({ ok: false, error: profErr.message }, { status: 400 });
   }
 
-  const orgId = userRow?.organization_id || null;
+  let orgId: string | null = profile?.organization_id ?? null;
+
+  // Fallback: organizations owned by this user
+  if (!orgId) {
+    const { data: ownedOrg, error: ownErr } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("owner_user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (ownErr) {
+      return NextResponse.json({ ok: false, error: ownErr.message }, { status: 400 });
+    }
+    orgId = ownedOrg?.id ?? null;
+  }
+
   if (!orgId) {
     return NextResponse.json(
-      { ok: false, error: "No organization linked to this user" },
+      { ok: false, error: "No organization linked or owned by this user" },
       { status: 400 }
     );
   }
@@ -52,6 +68,5 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, name });
 }
-  

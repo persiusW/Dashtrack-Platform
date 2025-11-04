@@ -14,6 +14,8 @@ export default function SettingsPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [orgName, setOrgName] = useState("");
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [fullNamePlaceholder, setFullNamePlaceholder] = useState("");
 
   const [currPw, setCurrPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -35,9 +37,12 @@ export default function SettingsPage() {
           return;
         }
 
-        setFullName(j.data.full_name || "");
+        setFullName(""); // keep empty so placeholder shows
+        setFullNamePlaceholder(j.data.full_name || "");
         setEmail(j.data.email || "");
-        setOrgName(j.data.organization?.name || "");
+        const org = j.data.organization || null;
+        setOrgName(org?.name || "");
+        setOrgId(org?.id || null);
         setLoading(false);
       } catch (e: any) {
         if (!mounted) return;
@@ -54,6 +59,10 @@ export default function SettingsPage() {
   async function saveProfile() {
     setErr("");
     setOk("");
+    if (!fullName.trim()) {
+      setErr("Name required");
+      return;
+    }
     setSaving(true);
     try {
       const r = await fetch("/api/profile", {
@@ -73,6 +82,8 @@ export default function SettingsPage() {
         title: "Profile updated",
         description: "Your profile information has been saved.",
       });
+      setFullNamePlaceholder(fullName);
+      setFullName("");
     } catch (e: any) {
       setSaving(false);
       setErr(e?.message || "Failed to update profile");
@@ -129,6 +140,7 @@ export default function SettingsPage() {
                 <label className="text-sm text-gray-600">Full Name</label>
                 <input
                   className="w-full border rounded px-3 py-2"
+                  placeholder={fullNamePlaceholder || "Full Name"}
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
@@ -192,13 +204,23 @@ export default function SettingsPage() {
         <section className="rounded-xl border p-6 bg-white">
           <h2 className="font-semibold">Organization</h2>
           <p className="text-sm text-gray-600">
-            {orgName ? "Update your organization details" : "Create your organization to start activations"}
+            {orgId ? "Update your organization details" : "Create your organization to start activations"}
           </p>
 
-          {orgName ? (
-            <OrgEditor initialName={orgName} onSaved={() => window.location.reload()} />
+          {orgId ? (
+            <OrgEditor
+              initialPlaceholder={orgName}
+              onSaved={(newName: string) => {
+                setOrgName(newName);
+              }}
+            />
           ) : (
-            <OrgCreate />
+            <OrgCreate
+              onCreated={(newOrg: { id: string; name: string }) => {
+                setOrgName(newOrg.name);
+                setOrgId(newOrg.id);
+              }}
+            />
           )}
         </section>
       </div>
@@ -206,7 +228,7 @@ export default function SettingsPage() {
   );
 }
 
-function OrgCreate() {
+function OrgCreate({ onCreated }: { onCreated: (org: { id: string; name: string }) => void }) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -230,9 +252,9 @@ function OrgCreate() {
         return;
       }
       setMsg("Organization created");
-      setTimeout(() => {
-        window.location.reload();
-      }, 600);
+      if (j.organization) {
+        onCreated(j.organization);
+      }
     } catch (e: any) {
       setBusy(false);
       setErr(e?.message || "Failed");
@@ -261,8 +283,9 @@ function OrgCreate() {
   );
 }
 
-function OrgEditor({ initialName, onSaved }: { initialName: string; onSaved: () => void }) {
-  const [name, setName] = useState(initialName || "");
+function OrgEditor({ initialPlaceholder, onSaved }: { initialPlaceholder: string; onSaved: (newName: string) => void }) {
+  const [name, setName] = useState<string>("");
+  const [placeholder, setPlaceholder] = useState<string>(initialPlaceholder || "");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -284,9 +307,9 @@ function OrgEditor({ initialName, onSaved }: { initialName: string; onSaved: () 
         return;
       }
       setMsg("Organization updated");
-      setTimeout(() => {
-        onSaved();
-      }, 500);
+      setPlaceholder(name);
+      setName("");
+      onSaved(name);
     } catch (e: any) {
       setBusy(false);
       setErr(e?.message || "Update failed");
@@ -300,9 +323,9 @@ function OrgEditor({ initialName, onSaved }: { initialName: string; onSaved: () 
       <label className="text-sm text-gray-600">Organization Name</label>
       <input
         className="w-full border rounded px-3 py-2"
+        placeholder={placeholder || "Organization"}
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="e.g., Acme Corp"
       />
       <div className="flex gap-2">
         <button
@@ -313,7 +336,7 @@ function OrgEditor({ initialName, onSaved }: { initialName: string; onSaved: () 
           {busy ? "Saving…" : "Save Changes"}
         </button>
         <button
-          onClick={() => setName(initialName)}
+          onClick={() => setName("")}
           className="px-4 py-2 rounded border"
         >
           Cancel
