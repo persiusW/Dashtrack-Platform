@@ -1,4 +1,6 @@
+
 import { useEffect, useState } from "react";
+import { AppLayout } from "@/components/layouts/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import { GlobalFilters } from "@/components/dashboard/GlobalFilters";
@@ -19,9 +21,8 @@ export default function OverviewPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { filters } = useGlobalFilters();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
+  const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIData | null>(null);
   const [timeSeries, setTimeSeries] = useState<TimeSeriesData[]>([]);
   const [topZones, setTopZones] = useState<TopZone[]>([]);
@@ -29,49 +30,59 @@ export default function OverviewPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/");
+      router.push("/login?next=/app/overview");
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user) {
-      const fetchData = async () => {
-        try {
-          setLoading(true);
-          const [kpiData, timeSeriesData, zonesData, agentsData] = await Promise.all([
-            dashboardService.getOverviewKPIs(filters.dateFrom, filters.dateTo),
-            dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, filters.activationId),
-            dashboardService.getTopZones(filters.dateFrom, filters.dateTo),
-            dashboardService.getTopAgents(filters.dateFrom, filters.dateTo),
-          ]);
+    let cancelled = false;
 
-          setKpis(kpiData);
-          setTimeSeries(timeSeriesData);
-          setTopZones(zonesData);
-          setTopAgents(agentsData);
-        } catch (error) {
-          console.error("Failed to load dashboard data:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchData();
+    async function fetchData() {
+      if (!user) return;
+      try {
+        setLoading(true);
+        const [kpiData, timeSeriesData, zonesData, agentsData] = await Promise.all([
+          dashboardService.getOverviewKPIs(filters.dateFrom, filters.dateTo),
+          dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, filters.activationId),
+          dashboardService.getTopZones(filters.dateFrom, filters.dateTo),
+          dashboardService.getTopAgents(filters.dateFrom, filters.dateTo),
+        ]);
+
+        if (cancelled) return;
+
+        setKpis(kpiData);
+        setTimeSeries(timeSeriesData);
+        setTopZones(zonesData);
+        setTopAgents(agentsData);
+      } catch (error) {
+        console.error("Failed to load dashboard data:", error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, filters]);
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
+            <p className="mt-4 text-muted-foreground">Loading...</p>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
-  if (!data) {
-    return (
+  return (
+    <AppLayout>
       <div className="container mx-auto p-6 space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Overview Dashboard</h1>
@@ -91,25 +102,25 @@ export default function OverviewPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <KPICard
                 title="Total Clicks"
-                value={kpis?.totalClicks || 0}
+                value={kpis?.totalClicks ?? 0}
                 icon={MousePointerClick}
                 description="All clicks received"
               />
               <KPICard
                 title="Valid Clicks"
-                value={kpis?.validClicks || 0}
+                value={kpis?.validClicks ?? 0}
                 icon={CheckCircle2}
                 description="Non-bot clicks"
               />
               <KPICard
                 title="Active Agents"
-                value={kpis?.totalAgents || 0}
+                value={kpis?.totalAgents ?? 0}
                 icon={Users}
                 description="Currently active"
               />
               <KPICard
                 title="Live Activations"
-                value={kpis?.activeActivations || 0}
+                value={kpis?.activeActivations ?? 0}
                 icon={Zap}
                 description="Active campaigns"
               />
@@ -153,6 +164,7 @@ export default function OverviewPage() {
           </>
         )}
       </div>
-    );
-  }
+    </AppLayout>
+  );
 }
+  
