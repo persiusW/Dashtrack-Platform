@@ -188,19 +188,137 @@ export default function SettingsPage() {
         </section>
 
         {/* Organization */}
+        {/* Organization (editable if present; create form if missing) */}
         <section className="rounded-xl border p-6 bg-white">
           <h2 className="font-semibold">Organization</h2>
-          <p className="text-sm text-gray-600">Manage your organization settings (read-only)</p>
-          <div className="mt-4 max-w-lg">
-            <label className="text-sm text-gray-600">Organization Name</label>
-            <input
-              className="w-full border rounded px-3 py-2 bg-gray-50"
-              value={orgName || ""}
-              disabled
-            />
-          </div>
+          <p className="text-sm text-gray-600">
+            {orgName ? "Update your organization details" : "Create your organization to start activations"}
+          </p>
+
+          {orgName ? (
+            <OrgEditor initialName={orgName} onSaved={() => window.location.reload()} />
+          ) : (
+            <OrgCreate />
+          )}
         </section>
       </div>
     </AppLayout>
+  );
+}
+
+function OrgCreate() {
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  async function submit() {
+    setBusy(true);
+    setMsg("");
+    setErr("");
+    try {
+      const r = await fetch("/api/organization/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ name }),
+      });
+      const j = await r.json();
+      setBusy(false);
+      if (!j.ok) {
+        setErr(j.error || "Failed");
+        return;
+      }
+      setMsg("Organization created");
+      setTimeout(() => {
+        window.location.reload();
+      }, 600);
+    } catch (e: any) {
+      setBusy(false);
+      setErr(e?.message || "Failed");
+    }
+  }
+
+  return (
+    <div className="mt-4 space-y-3 max-w-lg">
+      {err && <div className="text-sm text-red-600">{err}</div>}
+      {msg && <div className="text-sm text-green-600">{msg}</div>}
+      <label className="text-sm text-gray-600">Organization Name</label>
+      <input
+        className="w-full border rounded px-3 py-2"
+        placeholder="e.g., Acme Corp"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <button
+        onClick={submit}
+        disabled={busy || !name.trim()}
+        className="bg-black text-white px-4 py-2 rounded disabled:opacity-60"
+      >
+        {busy ? "Creating…" : "Create Organization"}
+      </button>
+    </div>
+  );
+}
+
+function OrgEditor({ initialName, onSaved }: { initialName: string; onSaved: () => void }) {
+  const [name, setName] = useState(initialName || "");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  async function save() {
+    setBusy(true);
+    setMsg("");
+    setErr("");
+    try {
+      const r = await fetch("/api/organization/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const j = await r.json();
+      setBusy(false);
+      if (!j.ok) {
+        setErr(j.error || "Update failed");
+        return;
+      }
+      setMsg("Organization updated");
+      setTimeout(() => {
+        onSaved();
+      }, 500);
+    } catch (e: any) {
+      setBusy(false);
+      setErr(e?.message || "Update failed");
+    }
+  }
+
+  return (
+    <div className="mt-4 space-y-3 max-w-lg">
+      {err && <div className="text-sm text-red-600">{err}</div>}
+      {msg && <div className="text-sm text-green-600">{msg}</div>}
+      <label className="text-sm text-gray-600">Organization Name</label>
+      <input
+        className="w-full border rounded px-3 py-2"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="e.g., Acme Corp"
+      />
+      <div className="flex gap-2">
+        <button
+          onClick={save}
+          disabled={busy || !name.trim()}
+          className="bg-black text-white px-4 py-2 rounded disabled:opacity-60"
+        >
+          {busy ? "Saving…" : "Save Changes"}
+        </button>
+        <button
+          onClick={() => setName(initialName)}
+          className="px-4 py-2 rounded border"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
