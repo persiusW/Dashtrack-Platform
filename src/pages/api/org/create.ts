@@ -83,21 +83,22 @@ export default async function handler(
       });
     }
 
-    const { error: userError } = await supabase
-      .from('users')
+    // Stop mutating public.users. Ensure a profile row exists for this user.
+    const { error: profileError } = await supabase
+      .from("profiles")
       .upsert({
         id: user.id,
-        organization_id: org.id,
-        role: 'client_manager',
+        email: user.email ?? null,
+        full_name: (user.user_metadata as any)?.full_name ?? null
       });
 
-    if (userError) {
-      console.error('User link error:', userError);
-      await supabase.from('organizations').delete().eq('id', org.id);
-      return res.status(400).json({ 
-        ok: false, 
-        error: 'Failed to link user to organization', 
-        details: userError.message 
+    if (profileError) {
+      console.error("Profile upsert error:", profileError);
+      await supabase.from("organizations").delete().eq("id", org.id);
+      return res.status(400).json({
+        ok: false,
+        error: "Failed to ensure profile",
+        details: profileError.message
       });
     }
 

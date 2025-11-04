@@ -75,20 +75,21 @@ export default async function handler(
       });
     }
 
-    const { error: userLinkError } = await supabase.from("users").upsert({
+    // Ensure a profile row exists for this user (stop mutating public.users)
+    const { error: profileUpsertError } = await supabase.from("profiles").upsert({
       id: user.id,
-      organization_id: org.id,
-      role: "client_manager",
+      email: user.email ?? null,
+      full_name: (user.user_metadata as any)?.full_name ?? null
     });
 
-    if (userLinkError) {
-      console.error("User-organization link error:", userLinkError);
-      // Rollback organization creation
+    if (profileUpsertError) {
+      console.error("Profile upsert error:", profileUpsertError);
+      // Optional: rollback organization creation if profile upsert fails
       await supabase.from("organizations").delete().eq("id", org.id);
       return res.status(500).json({
         ok: false,
-        error: "Failed to link user to organization",
-        details: userLinkError.message,
+        error: "Failed to ensure profile",
+        details: profileUpsertError.message,
       });
     }
 

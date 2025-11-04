@@ -34,13 +34,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Link user to org via app-level users mapping (no service-role)
-  const { error: userUpsertErr } = await supabase
-    .from("users")
-    .upsert({ id: user.id, organization_id: org.id, role: "client_manager" });
+  // Ensure a profile row exists/updates for this user (stop mutating public.users)
+  const { error: profileErr } = await supabase
+    .from("profiles")
+    .upsert({
+      id: user.id,
+      email: user.email ?? null,
+      full_name: (user.user_metadata as any)?.full_name ?? null
+    });
 
-  if (userUpsertErr) {
-    return NextResponse.json({ ok: false, error: userUpsertErr.message }, { status: 400 });
+  if (profileErr) {
+    return NextResponse.json({ ok: false, error: profileErr.message }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true, organization: org });
