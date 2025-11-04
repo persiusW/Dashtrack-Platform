@@ -33,15 +33,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const referrer = context.req.headers.referer || "";
 
   try {
-    // Service role client to bypass RLS for this critical path
     const supabaseService = createServerClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         cookies: {
           get: (name: string) => context.req.cookies[name],
-          set: () => {},
-          remove: () => {},
+          set: (_name: string, _value: string, _options: CookieOptions) => {},
+          remove: (_name: string, _options: CookieOptions) => {},
         },
       }
     );
@@ -54,8 +53,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       .single();
 
     if (linkError || !link) {
-      console.error(`Redirect error for slug '${slug}':`, linkError?.message || "Link not found");
-      return { notFound: true };
+      return {
+        redirect: {
+          destination: "/",
+          permanent: false
+        }
+      };
     }
 
     const deviceType = detectDeviceType(userAgent);
@@ -79,11 +82,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       .insert(clickData);
 
     if (clickError) {
-      console.error(`Failed to record click for slug '${slug}':`, clickError);
+      // Non-blocking: continue redirect even if analytics insert fails
+      // console.error("Click insert failed", clickError);
     }
 
     const today = new Date().toISOString().split("T")[0];
-    
     const { error: metricsError } = await supabaseService.rpc("upsert_daily_metrics", {
       p_tracked_link_id: link.id,
       p_date: today,
@@ -92,10 +95,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     });
 
     if (metricsError) {
-      console.error(`Failed to update metrics for slug '${slug}':`, metricsError);
+      // Non-blocking
+      // console.error("Metrics upsert failed", metricsError);
     }
 
-    const redirectUrl = getRedirectUrl(link, deviceType);
+    const redirectUrl = getRedirectUrl(link, deviceType) || "/";
 
     return {
       redirect: {
@@ -103,9 +107,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         permanent: false
       }
     };
-  } catch (error) {
-    console.error(`General redirect error for slug '${slug}':`, error);
-    return { notFound: true };
+  } catch {
+    return {
+      redirect: {
+        destination: "/",
+        permanent: false
+      }
+    };
   }
 };
 
