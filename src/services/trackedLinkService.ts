@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { qrService } from "./qrService";
 import type { Database } from "@/integrations/supabase/types";
+import { customAlphabet } from "nanoid";
 
 export type TrackedLink = Database["public"]["Tables"]["tracked_links"]["Row"];
 type TrackedLinkInsert = Database["public"]["Tables"]["tracked_links"]["Insert"];
@@ -9,6 +10,9 @@ type TrackedLinkUpdate = Database["public"]["Tables"]["tracked_links"]["Update"]
 export interface TrackedLinkWithQR extends TrackedLink {
   qr_url?: string;
 }
+
+// Lowercase a-z0-9 generator for short unique suffixes
+const nanoidLower = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 
 export const trackedLinkService = {
   /**
@@ -80,14 +84,19 @@ export const trackedLinkService = {
   },
 
   /**
-   * Generate slug suggestion from name
+   * Generate slug suggestion from name (adds a short suffix when base is empty/too short)
    */
   generateSlugSuggestion(name: string): string {
-    return name
+    const base = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
-      .substring(0, 50);
+      .substring(0, 40);
+
+    if (!base || base.length < 3) {
+      return `link-${nanoidLower()}`;
+    }
+    return base;
   },
 
   /**
@@ -237,7 +246,7 @@ export const trackedLinkService = {
       .single();
 
     if (error) {
-      if (error.code === "PGRST116") return null;
+      if ((error as any)?.code === "PGRST116") return null;
       throw error;
     }
 

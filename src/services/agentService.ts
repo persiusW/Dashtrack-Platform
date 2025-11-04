@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { nanoid } from "nanoid";
 
 type Agent = Database["public"]["Tables"]["agents"]["Row"];
 type AgentInsert = Database["public"]["Tables"]["agents"]["Insert"];
@@ -50,10 +50,10 @@ export const agentService = {
   },
 
   /**
-   * Generate a unique public stats token (UUID)
+   * Generate a unique public stats token
    */
   generatePublicStatsToken(): string {
-    return crypto.randomUUID();
+    return nanoid(21);
   },
 
   /**
@@ -68,20 +68,34 @@ export const agentService = {
       throw new Error("User organization not found");
     }
 
-    const agentWithTokenAndOrg = {
-      ...agent,
-      organization_id: user.app_metadata.organization_id,
-      public_stats_token: this.generatePublicStatsToken()
-    };
+    // Insert with collision retry (unique constraint on public_stats_token)
+    const maxAttempts = 5;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const token = this.generatePublicStatsToken();
+      const agentWithTokenAndOrg = {
+        ...agent,
+        organization_id: user.app_metadata.organization_id,
+        public_stats_token: token
+      };
 
-    const { data, error } = await supabase
-      .from("agents")
-      .insert(agentWithTokenAndOrg)
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from("agents")
+        .insert(agentWithTokenAndOrg)
+        .select()
+        .single();
 
-    if (error) throw error;
-    return data;
+      if (!error) {
+        return data as Agent;
+      }
+
+      // 23505 = unique_violation
+      if ((error as any)?.code === "23505" && attempt < maxAttempts) {
+        continue;
+      }
+      throw error;
+    }
+
+    throw new Error("Failed to create agent after multiple attempts");
   },
 
   /**
