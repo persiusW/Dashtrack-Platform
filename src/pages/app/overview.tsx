@@ -18,7 +18,7 @@ import { MousePointerClick, CheckCircle2, Users, Zap } from "lucide-react";
 import type { GetServerSideProps } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { Button } from "@/components/ui/button";
-import QuickCreateDialog from "@/components/forms/QuickCreateDialog";
+import QuickCreateDialog from "@/components/QuickCreateDialog";
 
 type OverviewProps = {
   initialActivationsCount: number;
@@ -160,14 +160,7 @@ export default function OverviewPage({ initialActivationsCount }: OverviewProps)
 
         <QuickCreateDialog
           open={showQuickCreate}
-          onOpenChange={setShowQuickCreate}
-          onCreated={(id) => {
-            if (id) {
-              window.location.assign(`/app/activations/${id}`);
-            } else {
-              window.location.assign("/app/activations");
-            }
-          }}
+          onClose={() => setShowQuickCreate(false)}
         />
       </AppLayout>
     );
