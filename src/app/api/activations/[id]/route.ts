@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   const body = await req.json().catch(() => ({} as any));
   const patch: Record<string, unknown> = {};
   if (typeof body.name === "string") patch.name = body.name.trim();
-  if (typeof body.default_redirect_url === "string") patch.default_redirect_url = body.default_redirect_url.trim();
+  if (typeof body.default_landing_url === "string") patch.default_landing_url = body.default_landing_url.trim();
   if (typeof body.status === "string") patch.status = body.status;
 
   const { error } = await supa.from("activations").update(patch).eq("id", id);
