@@ -1,82 +1,111 @@
 import Link from "next/link";
 import { MapPin, Share2, Wifi, Link2, FolderPlus, Users, BarChart3 } from "lucide-react";
+import type { ReactNode } from "react";
 
-const Bullet = ({ children }: { children: React.ReactNode }) => (
-  <div className="rounded-xl border bg-white p-3 text-sm">{children}</div>
-);
+interface HeroChipProps {
+  children: ReactNode;
+}
 
-export default function Landing() {
+function HeroChip({ children }: HeroChipProps) {
   return (
-    <main className="min-h-screen flex flex-col">
-      {/* Top Nav */}
-      <header className="sticky top-0 z-30 border-b bg-white/80 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="font-semibold">
-            DasHttp Track
+    <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700">
+      {children}
+    </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <main className="min-h-screen bg-white text-gray-900 flex flex-col">
+      {/* Background */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_70%_10%,#EEF2FF_0%,transparent_60%)]" />
+        <div className="absolute -top-40 -left-40 h-[540px] w-[540px] rounded-full bg-[conic-gradient(from_210deg,#E9D5FF_0%,#DBEAFE_30%,transparent_70%)] blur-3xl opacity-40" />
+      </div>
+
+      {/* NAV */}
+      <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/80 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white font-bold">D</span>
+            <span className="font-semibold">DashTrack</span>
           </Link>
-          <nav className="space-x-3">
-            <Link href="/login" className="text-sm hover:underline">
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="inline-block bg-black text-white px-3 py-1.5 rounded text-sm hover:bg-gray-800 transition-colors"
-            >
-              Get started
-            </Link>
+          <nav className="hidden gap-8 text-sm md:flex">
+            <a href="#features" className="hover:text-black">Features</a>
+            <a href="#how" className="hover:text-black">How it works</a>
+            <a href="#pricing" className="hover:text-black">Pricing</a>
           </nav>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="rounded-lg px-3 py-2 text-sm hover:bg-gray-50">Log in</Link>
+            <Link href="/signup" className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-900">Get started</Link>
+          </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        {/* Background gradient */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#EEF2FF] via-white to-white" />
+      {/* HERO */}
+      <section className="relative">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 pb-16 pt-12 md:grid-cols-2 md:pt-20">
+          <div>
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" /> Live attribution for QR/NFC links
+            </p>
+            <h1 className="text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
+              Track activations by <span className="bg-gradient-to-r from-black to-gray-500 bg-clip-text text-transparent">district</span>,{" "}
+              <span className="bg-gradient-to-r from-black to-gray-500 bg-clip-text text-transparent">zone</span> &{" "}
+              <span className="bg-gradient-to-r from-black to-gray-500 bg-clip-text text-transparent">agent</span>.
+            </h1>
+            <p className="mt-4 max-w-xl text-gray-600">
+              Create campaigns, assign districts &amp; zones, add agents and auto-generate unique links/QRs. See real-time
+              performance and pay marketers fairly.
+            </p>
 
-        <div className="relative mx-auto max-w-6xl px-6 py-20 sm:py-28 text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-black via-gray-800 to-gray-600 bg-clip-text text-transparent">
-            Track activations with QR/NFC.<br className="hidden sm:block" /> Attribute
-            results by zone & agent.
-          </h1>
+            {/* Hero CTAs */}
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <Link href="/signup" className="rounded-lg bg-black px-5 py-3 text-sm font-medium text-white hover:bg-gray-900">
+                Start free
+              </Link>
+              <Link href="/login" className="rounded-lg border border-gray-200 bg-white px-5 py-3 text-sm font-medium hover:bg-gray-50">
+                Log in
+              </Link>
+              <Link href="/app/overview" className="text-sm text-gray-600 underline underline-offset-4 hover:text-black">
+                View dashboard
+              </Link>
+            </div>
 
-          <p className="mt-5 text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Create activations, assign zones & agents, generate unique links/QR codes,
-            and see live performance in one dashboard.
-          </p>
-
-          <div className="mt-8 flex justify-center gap-3">
-            <Link
-              href="/signup"
-              className="bg-gradient-to-r from-black via-gray-900 to-gray-700 text-white px-6 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
-            >
-              Start free
-            </Link>
-            <Link
-              href="/login"
-              className="px-6 py-2.5 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
-            >
-              Log in
-            </Link>
+            {/* Hero chips */}
+            <div className="mt-6 grid max-w-xl grid-cols-1 gap-2 sm:grid-cols-2">
+              <HeroChip>Multi-zone activations</HeroChip>
+              <HeroChip>Unique QR per agent</HeroChip>
+              <HeroChip>Smart redirects (iOS/Android)</HeroChip>
+              <HeroChip>Live analytics &amp; CSV exports</HeroChip>
+            </div>
           </div>
 
-          <div className="mt-10 grid gap-3 sm:grid-cols-2">
-            <Bullet>• Activations (single/multi-zone)</Bullet>
-            <Bullet>• Unique QR per agent + public stats</Bullet>
-            <Bullet>• Smart redirects (iOS/Android/fallback)</Bullet>
-            <Bullet>• Live analytics & CSV exports</Bullet>
+          {/* Hero visual */}
+          <div className="relative">
+            <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+              <div className="h-72 w-full bg-[radial-gradient(circle_at_30%_30%,#F3F4F6,transparent_60%),radial-gradient(circle_at_70%_60%,#EEF2FF,transparent_55%)]" />
+              <MapPin className="absolute left-6 top-8" />
+              <MapPin className="absolute right-8 top-10" />
+              <MapPin className="absolute left-1/3 top-1/2" />
+              <MapPin className="absolute right-10 bottom-12" />
+              <MapPin className="absolute left-10 bottom-8" />
+            </div>
+            <div className="absolute -bottom-6 left-6 w-64 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+              <p className="text-xs text-gray-500">This week</p>
+              <p className="mt-1 text-2xl font-bold">2,105 valid clicks</p>
+              <p className="text-xs text-emerald-600">+8% vs last week</p>
+            </div>
           </div>
-
-          {/* Accent circles */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-r from-indigo-100 to-transparent blur-3xl opacity-40" />
         </div>
       </section>
 
       {/* Features Grid */}
       <hr className="my-12 border-gray-200 mx-auto max-w-6xl" />
-      
+
       <section id="features" className="mx-auto max-w-6xl px-6 py-12">
         <h2 className="text-xl font-semibold text-center sm:text-left mb-8">
-          Why teams use DasHttp Track
+          Why teams use DashTrack
         </h2>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -96,14 +125,14 @@ export default function Landing() {
               <h3 className="font-medium">Agent Attribution</h3>
             </div>
             <p className="text-sm text-gray-600">
-              Auto-generated links & QR codes per agent with transparent stats.
+              Auto-generated links &amp; QR codes per agent with transparent stats.
             </p>
           </div>
 
           <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-2">
               <Wifi className="w-5 h-5 text-indigo-500" />
-              <h3 className="font-medium">NFC & Smart Posters</h3>
+              <h3 className="font-medium">NFC &amp; Smart Posters</h3>
             </div>
             <p className="text-sm text-gray-600">
               Compare tap-through rates by sticker tagline or zone stand.
@@ -124,7 +153,7 @@ export default function Landing() {
 
       {/* How It Works */}
       <hr className="my-12 border-gray-200 mx-auto max-w-6xl" />
-      
+
       <section id="how" className="mx-auto max-w-6xl px-6 py-12">
         <h2 className="text-xl font-semibold text-center sm:text-left mb-8">
           How it works
@@ -134,7 +163,7 @@ export default function Landing() {
           <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-2">
               <FolderPlus className="w-5 h-5 text-indigo-500" />
-              <div className="font-medium">Create Activations & Zones</div>
+              <div className="font-medium">Create Activations &amp; Zones</div>
             </div>
             <p className="text-sm text-gray-600">
               Set up campaigns, assign supervisors, and configure zone locations.
@@ -144,7 +173,7 @@ export default function Landing() {
           <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-2">
               <Users className="w-5 h-5 text-indigo-500" />
-              <div className="font-medium">Add Agents & Generate Links</div>
+              <div className="font-medium">Add Agents &amp; Generate Links</div>
             </div>
             <p className="text-sm text-gray-600">
               Each agent gets a unique link and QR code automatically.
@@ -154,7 +183,7 @@ export default function Landing() {
           <div className="rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-2">
               <BarChart3 className="w-5 h-5 text-indigo-500" />
-              <div className="font-medium">Track & Optimize</div>
+              <div className="font-medium">Track &amp; Optimize</div>
             </div>
             <p className="text-sm text-gray-600">
               View real-time performance metrics and optimize top-performing zones.
@@ -165,14 +194,14 @@ export default function Landing() {
 
       {/* Dashboard Preview Card */}
       <hr className="my-12 border-gray-200 mx-auto max-w-6xl" />
-      
+
       <section className="mx-auto max-w-6xl px-6 pb-12">
         <div className="rounded-3xl border bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <div className="font-medium">Clean, Real-Time Dashboard</div>
               <p className="text-sm text-gray-600">
-                View valid clicks over time, top zones & agents instantly.
+                View valid clicks over time, top zones &amp; agents instantly.
               </p>
             </div>
             <Link
@@ -216,7 +245,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="mt-auto border-t border-gray-200 py-6 bg-gradient-to-r from-gray-50 to-white">
         <div className="mx-auto max-w-6xl px-6 text-sm text-gray-500 flex items-center justify-between">
-          <span>© {new Date().getFullYear()} DasHttp</span>
+          <span>© 2025 DashTrack</span>
           <div className="space-x-4">
             <Link className="underline hover:text-black transition-colors" href="/terms">
               Terms
