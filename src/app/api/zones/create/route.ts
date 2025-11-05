@@ -4,39 +4,24 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 
 export async function POST(req: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  const { data:{ user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ ok:false, error:"Unauthorized" }, { status:401 });
 
-  const body = await req.json().catch(() => ({} as any));
-  const name: string = String(body?.name || "").trim();
-  const district_id: string = String(body?.district_id || "").trim();
+  const body = await req.json();
+  const name = (body?.name||"").trim();
+  const district_id = (body?.district_id||"").trim();
+  if (!name || !district_id) return NextResponse.json({ ok:false, error:"name and district_id required" }, { status:400 });
 
-  if (!name) return NextResponse.json({ ok: false, error: "Zone name required" }, { status: 400 });
-  if (!district_id) return NextResponse.json({ ok: false, error: "district_id required" }, { status: 400 });
+  const { data: d } = await supabase
+    .from("districts").select("id, activation_id, organization_id").eq("id", district_id).maybeSingle();
+  if (!d) return NextResponse.json({ ok:false, error:"District not found" }, { status:400 });
 
-  // Resolve district to get organization_id and activation_id
-  const { data: district, error: dErr } = await supabase
-    .from("districts")
-    .select("id, activation_id, organization_id")
-    .eq("id", district_id)
-    .maybeSingle();
-
-  if (dErr) return NextResponse.json({ ok: false, error: dErr.message }, { status: 400 });
-  if (!district?.id) return NextResponse.json({ ok: false, error: "District not found" }, { status: 404 });
-
-  // Insert zone attached to district and activation/org
-  const { data: zone, error: zErr } = await supabase
+  const { data: z, error } = await supabase
     .from("zones")
-    .insert({
-      name,
-      organization_id: (district as any).organization_id,
-      activation_id: (district as any).activation_id,
-      district_id: district.id,
-    } as any)
-    .select("id, name")
+    .insert({ name, district_id: d.id, activation_id: d.activation_id, organization_id: d.organization_id })
+    .select("id")
     .single();
+  if (error) return NextResponse.json({ ok:false, error: error.message }, { status:400 });
 
-  if (zErr) return NextResponse.json({ ok: false, error: zErr.message }, { status: 400 });
-
-  return NextResponse.json({ ok: true, zone });
+  return NextResponse.json({ ok:true, zone: z });
 }

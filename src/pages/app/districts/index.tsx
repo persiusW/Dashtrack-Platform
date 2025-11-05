@@ -188,12 +188,12 @@ function CenterCard({
       <p className="mt-2 text-gray-600">{subtitle}</p>
       {children}
       {cta && (
-        <a
+        <Link
           href={cta.href}
           className="inline-block mt-6 bg-black text-white px-4 py-2 rounded"
         >
           {cta.label}
-        </a>
+        </Link>
       )}
     </div>
   );

@@ -58,9 +58,9 @@ export default function DistrictZonesPage({ district, zones }: Props) {
       <AppLayout>
         <div className="max-w-xl mx-auto text-center mt-16">
           <h2 className="text-2xl font-semibold">District not found</h2>
-          <a className="inline-block mt-6 bg-black text-white px-4 py-2 rounded" href="/app/districts">
+          <Link className="inline-block mt-6 bg-black text-white px-4 py-2 rounded" href="/app/districts">
             Back to Districts
-          </a>
+          </Link>
         </div>
       </AppLayout>
     );
