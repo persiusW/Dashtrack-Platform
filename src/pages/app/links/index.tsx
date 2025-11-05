@@ -22,6 +22,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 type LinkRow = {
   id: string;
@@ -75,10 +76,19 @@ export const getServerSideProps: GetServerSideProps<LinksProps> = async (ctx) =>
   if (organizationId) {
     const { data } = await supabase
       .from("tracked_links")
-      .select("id, slug, is_active, created_at, description, redirect_url")
+      .select("id, slug, is_active, created_at, description, destination_strategy, single_url, fallback_url")
       .eq("organization_id", organizationId)
       .order("created_at", { ascending: false });
-    links = (data as LinkRow[]) || [];
+
+    const rows = (data as Array<any>) || [];
+    links = rows.map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      is_active: r.is_active ?? true,
+      created_at: r.created_at ?? null,
+      description: r.description ?? null,
+      redirect_url: r.single_url || r.fallback_url || "",
+    }));
   }
 
   return {
@@ -94,6 +104,7 @@ export default function LinksPage({ organizationId, links: initialLinks }: Links
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; slug: string } | null>(null);
   const [redirectEdit, setRedirectEdit] = useState<{ id: string; url: string } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return links;
@@ -224,7 +235,7 @@ export default function LinksPage({ organizationId, links: initialLinks }: Links
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Tracked Links</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your tracking links</p>
           </div>
-          <Button>
+          <Button onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Link
           </Button>
@@ -352,6 +363,17 @@ export default function LinksPage({ organizationId, links: initialLinks }: Links
         onSave={handleSaveRedirect}
         onCancel={() => setRedirectEdit(null)}
       />
+
+      <CreateLinkDialog
+        open={createOpen}
+        organizationId={organizationId}
+        onCancel={() => setCreateOpen(false)}
+        onCreated={(newLink) => {
+          setLinks((prev) => [newLink, ...prev]);
+          setCreateOpen(false);
+          toast({ title: "Created", description: "New tracked link added." });
+        }}
+      />
     </AppLayout>
   );
 }
@@ -413,6 +435,152 @@ function RedirectDialog({
             </DialogClose>
             <Button type="submit" disabled={!url.trim() || submitting}>
               {submitting ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CreateLinkDialog({
+  open,
+  organizationId,
+  onCancel,
+  onCreated,
+}: {
+  open: boolean;
+  organizationId: string;
+  onCancel: () => void;
+  onCreated: (link: LinkRow) => void;
+}) {
+  const { toast } = useToast();
+  const [description, setDescription] = useState("");
+  const [slug, setSlug] = useState("");
+  const [touchedSlug, setTouchedSlug] = useState(false);
+  const [url, setUrl] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [err, setErr] = useState<string>("");
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) onCancel();
+  };
+
+  const handleDescriptionChange = (v: string) => {
+    setDescription(v);
+    if (!touchedSlug) {
+      const suggested = trackedLinkService.generateSlugSuggestion(v);
+      setSlug(suggested);
+    }
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedSlug = slug.trim();
+    const trimmedUrl = url.trim();
+    const trimmedDesc = description.trim();
+
+    if (!trimmedSlug || !trimmedUrl) {
+      setErr("Slug and redirect URL are required.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setErr("");
+
+      const available = await trackedLinkService.checkSlugAvailable(trimmedSlug);
+      if (!available) {
+        setErr("Slug is already taken. Please choose another.");
+        setSubmitting(false);
+        return;
+      }
+
+      const created = await trackedLinkService.createTrackedLink({
+        organization_id: organizationId,
+        activation_id: null,
+        zone_id: null,
+        agent_id: null,
+        slug: trimmedSlug,
+        destination_strategy: "single",
+        single_url: trimmedUrl,
+        description: trimmedDesc || null,
+        is_default: false,
+      } as any);
+
+      const newLink: LinkRow = {
+        id: created.id,
+        slug: created.slug,
+        is_active: (created as any).is_active ?? true,
+        created_at: (created as any).created_at ?? new Date().toISOString(),
+        description: created.description ?? null,
+        redirect_url: ((created as any).single_url as string) || ((created as any).fallback_url as string) || "",
+      };
+
+      onCreated(newLink);
+    } catch (e: any) {
+      setErr(e?.message || "Failed to create link.");
+      toast({ title: "Create failed", description: e?.message || "Unable to create link.", variant: "destructive" as any });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <form onSubmit={submit}>
+          <DialogHeader>
+            <DialogTitle>New tracked link</DialogTitle>
+            <DialogDescription>Create a single-destination tracking link.</DialogDescription>
+          </DialogHeader>
+
+          {err ? <div className="text-sm text-red-600">{err}</div> : null}
+
+          <div className="grid gap-3 py-2">
+            <div className="grid gap-2">
+              <Label htmlFor="desc">Description</Label>
+              <Input
+                id="desc"
+                placeholder="Optional label"
+                value={description}
+                onChange={(e) => handleDescriptionChange(e.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="slug">Slug</Label>
+              <Input
+                id="slug"
+                value={slug}
+                onChange={(e) => {
+                  setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, "-"));
+                  setTouchedSlug(true);
+                }}
+                placeholder="e.g., summer-sale"
+              />
+              <div className="text-xs text-muted-foreground">Public URL: /l/{slug || "your-slug"}</div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="url">Redirect URL</Label>
+              <Input
+                id="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://example.com/landing"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="mt-2">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="submit" disabled={submitting || !slug.trim() || !url.trim()}>
+              {submitting ? "Creating…" : "Create"}
             </Button>
           </DialogFooter>
         </form>
