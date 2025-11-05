@@ -19,9 +19,11 @@ import type { GetServerSideProps } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { Button } from "@/components/ui/button";
 import QuickCreateDialog from "@/components/QuickCreateDialog";
+import Link from "next/link";
 
 type OverviewProps = {
   initialActivationsCount: number;
+  organizationId: string | null;
 };
 
 export const getServerSideProps: GetServerSideProps<OverviewProps> = async (ctx) => {
@@ -89,11 +91,12 @@ export const getServerSideProps: GetServerSideProps<OverviewProps> = async (ctx)
   return {
     props: {
       initialActivationsCount: activationsCount,
+      organizationId,
     },
   };
 };
 
-export default function OverviewPage({ initialActivationsCount }: OverviewProps) {
+export default function OverviewPage({ initialActivationsCount, organizationId }: OverviewProps) {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { filters } = useGlobalFilters();
@@ -115,14 +118,14 @@ export default function OverviewPage({ initialActivationsCount }: OverviewProps)
     let cancelled = false;
 
     async function fetchData() {
-      if (!user) return;
+      if (!user || !organizationId) return;
       try {
         setLoading(true);
         const [kpiData, timeSeriesData, zonesData, agentsData] = await Promise.all([
-          dashboardService.getOverviewKPIs(filters.dateFrom, filters.dateTo),
-          dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, filters.activationId),
-          dashboardService.getTopZones(filters.dateFrom, filters.dateTo),
-          dashboardService.getTopAgents(filters.dateFrom, filters.dateTo),
+          dashboardService.getOverviewKPIs(filters.dateFrom, filters.dateTo, organizationId),
+          dashboardService.getTimeSeriesData(filters.dateFrom, filters.dateTo, organizationId, filters.activationId),
+          dashboardService.getTopZones(filters.dateFrom, filters.dateTo, organizationId),
+          dashboardService.getTopAgents(filters.dateFrom, filters.dateTo, organizationId),
         ]);
 
         if (cancelled) return;
@@ -143,7 +146,7 @@ export default function OverviewPage({ initialActivationsCount }: OverviewProps)
     return () => {
       cancelled = true;
     };
-  }, [user, filters]);
+  }, [user, filters, organizationId]);
 
   if (authLoading) {
     return (
@@ -152,6 +155,26 @@ export default function OverviewPage({ initialActivationsCount }: OverviewProps)
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
             <p className="mt-4 text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!organizationId) {
+    return (
+      <AppLayout>
+        <div className="container mx-auto p-6">
+          <div className="mx-auto max-w-2xl text-center bg-white dark:bg-gray-800 border rounded-xl p-10">
+            <h1 className="text-2xl font-bold">Set up your organization</h1>
+            <p className="text-muted-foreground mt-2">
+              Create your organization in Settings, then launch your first activation.
+            </p>
+            <div className="mt-6">
+              <Link href="/app/settings" className="inline-block bg-black text-white px-4 py-2 rounded">
+                Go to Settings
+              </Link>
+            </div>
           </div>
         </div>
       </AppLayout>

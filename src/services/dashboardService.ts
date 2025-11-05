@@ -69,25 +69,28 @@ function getMostRecentEntry(
 }
 
 export const dashboardService = {
-  async getOverviewKPIs(dateFrom: string, dateTo: string): Promise<KPIData> {
-    const cacheKey = `overview-kpis-${dateFrom}-${dateTo}`;
+  async getOverviewKPIs(dateFrom: string, dateTo: string, organizationId: string): Promise<KPIData> {
+    const cacheKey = `overview-kpis-${organizationId}-${dateFrom}-${dateTo}`;
     const cached = getCachedData<KPIData>(cacheKey);
     if (cached) return cached;
 
     const { data: clicks } = await supabase
       .from("clicks")
-      .select("is_bot")
+      .select("is_bot, organization_id")
+      .eq("organization_id", organizationId)
       .gte("created_at", `${dateFrom}T00:00:00Z`)
       .lte("created_at", `${dateTo}T23:59:59Z`);
 
     const { data: agents } = await supabase
       .from("agents")
-      .select("id")
+      .select("id, organization_id, active")
+      .eq("organization_id", organizationId)
       .eq("active", true);
 
     const { data: activations } = await supabase
       .from("activations")
-      .select("id")
+      .select("id, organization_id, status")
+      .eq("organization_id", organizationId)
       .eq("status", "live");
 
     const totalClicks = clicks?.length || 0;
@@ -107,16 +110,18 @@ export const dashboardService = {
   async getTimeSeriesData(
     dateFrom: string,
     dateTo: string,
+    organizationId: string,
     activationId?: string,
     zoneId?: string
   ): Promise<TimeSeriesData[]> {
-    const cacheKey = `timeseries-${dateFrom}-${dateTo}-${activationId || "all"}-${zoneId || "all"}`;
+    const cacheKey = `timeseries-${organizationId}-${dateFrom}-${dateTo}-${activationId || "all"}-${zoneId || "all"}`;
     const cached = getCachedData<TimeSeriesData[]>(cacheKey);
     if (cached) return cached;
 
     let query = supabase
       .from("clicks")
-      .select("created_at, is_bot")
+      .select("created_at, is_bot, organization_id, activation_id, zone_id")
+      .eq("organization_id", organizationId)
       .gte("created_at", `${dateFrom}T00:00:00Z`)
       .lte("created_at", `${dateTo}T23:59:59Z`);
 
@@ -145,14 +150,15 @@ export const dashboardService = {
     return result;
   },
 
-  async getTopZones(dateFrom: string, dateTo: string, limit: number = 5): Promise<TopZone[]> {
-    const cacheKey = `top-zones-${dateFrom}-${dateTo}-${limit}`;
+  async getTopZones(dateFrom: string, dateTo: string, organizationId: string, limit: number = 5): Promise<TopZone[]> {
+    const cacheKey = `top-zones-${organizationId}-${dateFrom}-${dateTo}-${limit}`;
     const cached = getCachedData<TopZone[]>(cacheKey);
     if (cached) return cached;
 
     const { data } = await supabase
       .from("clicks")
-      .select("zone_id, is_bot, zones!clicks_zone_id_fkey (id, name)")
+      .select("zone_id, is_bot, organization_id, zones!clicks_zone_id_fkey (id, name)")
+      .eq("organization_id", organizationId)
       .gte("created_at", `${dateFrom}T00:00:00Z`)
       .lte("created_at", `${dateTo}T23:59:59Z`)
       .not("zone_id", "is", null);
@@ -175,14 +181,15 @@ export const dashboardService = {
     return result;
   },
 
-  async getTopAgents(dateFrom: string, dateTo: string, limit: number = 5): Promise<TopAgent[]> {
-    const cacheKey = `top-agents-${dateFrom}-${dateTo}-${limit}`;
+  async getTopAgents(dateFrom: string, dateTo: string, organizationId: string, limit: number = 5): Promise<TopAgent[]> {
+    const cacheKey = `top-agents-${organizationId}-${dateFrom}-${dateTo}-${limit}`;
     const cached = getCachedData<TopAgent[]>(cacheKey);
     if (cached) return cached;
 
     const { data } = await supabase
       .from("clicks")
-      .select("agent_id, is_bot, agents!clicks_agent_id_fkey (id, name, public_stats_token)")
+      .select("agent_id, is_bot, organization_id, agents!clicks_agent_id_fkey (id, name, public_stats_token)")
+      .eq("organization_id", organizationId)
       .gte("created_at", `${dateFrom}T00:00:00Z`)
       .lte("created_at", `${dateTo}T23:59:59Z`)
       .not("agent_id", "is", null);

@@ -1,107 +1,151 @@
 
-import { AppLayout } from "@/components/layouts/AppLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Calendar, MapPin, Users } from "lucide-react";
+import { useState } from "react";
+import type { GetServerSideProps } from "next";
+import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
+import { AppLayout } from "@/components/layouts/AppLayout";
+import QuickCreateDialog from "@/components/QuickCreateDialog";
 
-export default function ActivationsPage() {
-  const activations = [
-    {
-      id: "1",
-      name: "Summer Campaign 2024",
-      description: "Promotional campaign for summer products",
-      type: "multi",
-      status: "live",
-      start_at: "2024-06-01",
-      end_at: "2024-08-31",
-      zones_count: 12,
-      agents_count: 45,
-    },
-    {
-      id: "2",
-      name: "Fall Product Launch",
-      description: "New product line launch activation",
-      type: "single",
-      status: "draft",
-      start_at: "2024-09-15",
-      end_at: "2024-10-31",
-      zones_count: 5,
-      agents_count: 20,
-    },
-  ];
+type Activation = {
+  id: string;
+  name: string;
+  status: string | null;
+  created_at: string | null;
+};
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "live":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      case "draft":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
-      case "paused":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-      case "ended":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+type ActivationsProps = {
+  organizationId: string | null;
+  activations: Activation[];
+};
+
+export const getServerSideProps: GetServerSideProps<ActivationsProps> = async (ctx) => {
+  const supabase = createPagesServerClient(ctx);
+
+  const { data: sessionRes } = await supabase.auth.getSession();
+  if (!sessionRes?.session) {
+    return { redirect: { destination: "/login?next=/app/activations", permanent: false } };
+  }
+
+  const { data: userRes } = await supabase.auth.getUser();
+  const userId = userRes?.user?.id || null;
+
+  let organizationId: string | null = null;
+
+  if (userId) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (profile?.organization_id) {
+      organizationId = profile.organization_id;
     }
+  }
+
+  if (!organizationId && userId) {
+    const { data: ownedOrg } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("owner_user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    organizationId = ownedOrg?.id ?? null;
+  }
+
+  let activations: Activation[] = [];
+  if (organizationId) {
+    const { data } = await supabase
+      .from("activations")
+      .select("id, name, status, created_at")
+      .eq("organization_id", organizationId)
+      .order("created_at", { ascending: false });
+    activations = (data as Activation[]) || [];
+  }
+
+  return {
+    props: {
+      organizationId,
+      activations,
+    },
   };
+};
+
+export default function ActivationsPage({ organizationId, activations }: ActivationsProps) {
+  if (!organizationId) {
+    return (
+      <AppLayout>
+        <div className="max-w-xl mx-auto text-center mt-16">
+          <h2 className="text-2xl font-semibold">No organization</h2>
+          <p className="mt-2 text-gray-600">Create your organization in Settings first.</p>
+          <Link href="/app/settings" className="inline-block mt-6 bg-black text-white px-4 py-2 rounded">
+            Go to Settings
+          </Link>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!activations || activations.length === 0) {
+    return (
+      <AppLayout>
+        <EmptyCreateActivation />
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              Activations
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Manage your marketing activations
-            </p>
-          </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Activation
-          </Button>
+          <h1 className="text-2xl font-bold">Activations</h1>
+          <CreateButton />
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activations.map((activation) => (
-            <Link key={activation.id} href={`/app/activations/${activation.id}`}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="line-clamp-1">{activation.name}</CardTitle>
-                    <Badge className={getStatusColor(activation.status)}>
-                      {activation.status}
-                    </Badge>
-                  </div>
-                  <CardDescription className="line-clamp-2">
-                    {activation.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center text-muted-foreground">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      {new Date(activation.start_at).toLocaleDateString()} -{" "}
-                      {new Date(activation.end_at).toLocaleDateString()}
-                    </div>
-                    <div className="flex items-center text-muted-foreground">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      {activation.zones_count} zones
-                    </div>
-                    <div className="flex items-center text-muted-foreground">
-                      <Users className="h-4 w-4 mr-2" />
-                      {activation.agents_count} agents
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+        <div className="grid gap-3">
+          {activations.map((a) => {
+            const ts = a.created_at ? new Date(a.created_at).toISOString().replace("T", " ").slice(0, 16) : "";
+            return (
+              <Link
+                key={a.id}
+                href={`/app/activations/${a.id}`}
+                className="block rounded-xl border p-4 bg-white hover:bg-gray-50"
+              >
+                <div className="font-medium">{a.name}</div>
+                <div className="text-xs text-gray-600 mt-1">{ts}</div>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </AppLayout>
   );
 }
+
+function CreateButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button className="bg-black text-white px-4 py-2 rounded" onClick={() => setOpen(true)}>
+        Create Activation
+      </button>
+      <QuickCreateDialog open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
+function EmptyCreateActivation() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="max-w-xl mx-auto text-center mt-16">
+      <h2 className="text-2xl font-semibold">Create your first activation</h2>
+      <p className="mt-2 text-gray-600">You have no activations yet.</p>
+      <button className="mt-6 bg-black text-white px-4 py-2 rounded" onClick={() => setOpen(true)}>
+        Create Activation
+      </button>
+      <QuickCreateDialog open={open} onClose={() => setOpen(false)} />
+    </div>
+  );
+}
+  
