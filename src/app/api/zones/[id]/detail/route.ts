@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteUserAndOrg, zoneInOrg } from "@/lib/org";
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   const { user, orgId, supa } = await getRouteUserAndOrg();
   if (!user) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   if (!orgId) return NextResponse.json({ ok: false, error: "No organization" }, { status: 400 });
 
-  const zoneId = params.id;
+  const zoneId = id;
   const allowed = await zoneInOrg(supa as any, zoneId, orgId);
   if (!allowed) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
 
@@ -54,8 +55,9 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const zoneId = params.id;
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
+  const zoneId = id;
   const { user, orgId, supa } = await getRouteUserAndOrg();
   if (!user) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   if (!orgId) return NextResponse.json({ ok: false, error: "No organization" }, { status: 400 });

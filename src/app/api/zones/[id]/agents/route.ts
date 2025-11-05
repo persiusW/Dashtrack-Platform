@@ -4,12 +4,13 @@ import { customAlphabet } from "nanoid";
 
 const nano = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz", 8);
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   const { user, orgId, supa } = await getRouteUserAndOrg();
   if (!user) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   if (!orgId) return NextResponse.json({ ok: false, error: "No organization" }, { status: 400 });
 
-  const zoneId = params.id;
+  const zoneId = id;
   const allowed = await zoneInOrg(supa as any, zoneId, orgId);
   if (!allowed) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
 
