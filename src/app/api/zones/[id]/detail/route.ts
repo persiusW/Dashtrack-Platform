@@ -19,12 +19,25 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 
   if (!zone) return NextResponse.json({ ok: false, error: "Zone not found" }, { status: 404 });
 
-  const { data: defaultLink } = await (supa as any)
+  const { data: defaultLinkRaw } = await (supa as any)
     .from("tracked_links")
-    .select("id, slug, description, redirect_url, is_default")
+    .select("id, slug, description, destination_strategy, single_url, fallback_url, is_default")
     .eq("zone_id", zoneId)
     .eq("is_default", true)
     .maybeSingle();
+
+  const normalizedDefault = defaultLinkRaw
+    ? {
+        id: defaultLinkRaw.id,
+        slug: defaultLinkRaw.slug,
+        description: defaultLinkRaw.description ?? null,
+        redirect_url:
+          defaultLinkRaw.destination_strategy === "single"
+            ? defaultLinkRaw.single_url || ""
+            : defaultLinkRaw.fallback_url || "",
+        is_default: true,
+      }
+    : null;
 
   const { data: agents } = await (supa as any)
     .from("agents")
@@ -32,26 +45,36 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     .eq("zone_id", zoneId)
     .order("created_at", { ascending: false });
 
-  const agentIds = Array.isArray(agents) ? agents.map(a => a.id) : [];
+  const agentIds = Array.isArray(agents) ? agents.map((a) => a.id) : [];
   const linksByAgent: Record<string, any[]> = {};
 
   if (agentIds.length) {
     const { data: agentLinks } = await (supa as any)
       .from("tracked_links")
-      .select("id, agent_id, slug, description, redirect_url, created_at")
+      .select("id, agent_id, slug, description, destination_strategy, single_url, fallback_url, created_at")
       .in("agent_id", agentIds);
 
     for (const l of agentLinks ?? []) {
       const k = (l as any).agent_id as string;
-      (linksByAgent[k] ||= []).push(l);
+      (linksByAgent[k] ||= []).push({
+        id: (l as any).id,
+        agent_id: (l as any).agent_id,
+        slug: (l as any).slug,
+        description: (l as any).description ?? null,
+        redirect_url:
+          (l as any).destination_strategy === "single"
+            ? (l as any).single_url || ""
+            : (l as any).fallback_url || "",
+        created_at: (l as any).created_at,
+      });
     }
   }
 
   return NextResponse.json({
     ok: true,
     zone,
-    defaultLink: defaultLink || null,
-    agents: (agents ?? []).map((a: any) => ({ ...a, links: linksByAgent[a.id] || [] }))
+    defaultLink: normalizedDefault,
+    agents: (agents ?? []).map((a: any) => ({ ...a, links: linksByAgent[a.id] || [] })),
   });
 }
 
@@ -81,35 +104,58 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     .eq("id", zone.activation_id)
     .maybeSingle();
 
-  const { data: existing } = await (supa as any)
+  const { data: existingRaw } = await (supa as any)
     .from("tracked_links")
-    .select("id, slug, description, redirect_url, is_default")
+    .select("id, slug, description, destination_strategy, single_url, fallback_url, is_default")
     .eq("zone_id", zoneId)
     .eq("is_default", true)
     .maybeSingle();
 
-  if (existing) return NextResponse.json({ ok: true, link: existing });
+  if (existingRaw) {
+    const link = {
+      id: existingRaw.id,
+      slug: existingRaw.slug,
+      description: existingRaw.description ?? null,
+      redirect_url:
+        existingRaw.destination_strategy === "single"
+          ? existingRaw.single_url || ""
+          : existingRaw.fallback_url || "",
+      is_default: true,
+    };
+    return NextResponse.json({ ok: true, link });
+  }
 
   const { customAlphabet } = await import("nanoid");
   const nano = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz", 8);
 
-  const payload = {
+  const insertPayload = {
     organization_id: orgId,
     activation_id: zone.activation_id,
     zone_id: zoneId,
     agent_id: null,
     slug: nano(),
-    redirect_url: act?.default_redirect_url || "",
+    destination_strategy: "single",
+    single_url: act?.default_redirect_url || "",
     description: desc,
-    is_default: true
+    is_default: true,
+    is_active: true,
   };
 
-  const { data: link, error } = await (supa as any)
+  const { data: created, error } = await (supa as any)
     .from("tracked_links")
-    .insert(payload)
-    .select("id, slug, description, redirect_url, is_default")
+    .insert(insertPayload)
+    .select("id, slug, description, destination_strategy, single_url, fallback_url, is_default")
     .single();
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+
+  const link = {
+    id: created.id,
+    slug: created.slug,
+    description: created.description ?? null,
+    redirect_url: created.destination_strategy === "single" ? created.single_url || "" : created.fallback_url || "",
+    is_default: true,
+  };
+
   return NextResponse.json({ ok: true, link });
 }

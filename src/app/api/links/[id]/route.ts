@@ -13,15 +13,22 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
     .eq("id", id)
     .maybeSingle();
 
-  if (!link || link.organization_id !== orgId) {
+  if (!link || (link as any).organization_id !== orgId) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }
 
   const body = await req.json().catch(() => ({} as any));
-  const patch: Record<string, string> = {};
+  const patch: Record<string, unknown> = {};
 
   if (typeof body.description === "string") patch.description = body.description.trim();
-  if (typeof body.redirect_url === "string") patch.redirect_url = body.redirect_url.trim();
+  if (typeof body.redirect_url === "string") {
+    patch.destination_strategy = "single";
+    patch.single_url = body.redirect_url.trim();
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ ok: false, error: "No changes" }, { status: 400 });
+  }
 
   const { error } = await supa.from("tracked_links").update(patch).eq("id", id);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });

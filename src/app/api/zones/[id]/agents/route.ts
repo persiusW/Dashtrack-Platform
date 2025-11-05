@@ -42,22 +42,31 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
   const redirect = (act?.default_landing_url || act?.default_redirect_url || "").trim();
 
-  const { data: link, error: lErr } = await (supa as any)
+  const { data: created, error: lErr } = await (supa as any)
     .from("tracked_links")
     .insert({
       organization_id: orgId,
       activation_id: zone.activation_id,
       zone_id: zoneId,
-      agent_id: agent.id,
+      agent_id: (agent as any).id,
       slug: nano(),
-      redirect_url: redirect,
+      destination_strategy: "single",
+      single_url: redirect,
       description: `${name} — agent link`,
-      is_default: false
+      is_default: false,
+      is_active: true,
     })
-    .select("id, slug, description, redirect_url")
+    .select("id, slug, description, destination_strategy, single_url, fallback_url")
     .single();
 
   if (lErr) return NextResponse.json({ ok: false, error: lErr.message }, { status: 400 });
+
+  const link = {
+    id: created.id,
+    slug: created.slug,
+    description: created.description ?? null,
+    redirect_url: created.destination_strategy === "single" ? created.single_url || "" : created.fallback_url || "",
+  };
 
   return NextResponse.json({ ok: true, agent, link });
 }
