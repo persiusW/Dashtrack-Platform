@@ -18,6 +18,11 @@ interface StepCardProps {
   children: ReactNode;
 }
 
+interface KPIProps {
+  value: string;
+  label: string;
+}
+
 function HeroChip({ children }: HeroChipProps) {
   return (
     <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700">
@@ -74,6 +79,15 @@ function StepCard({ step, title, children }: StepCardProps) {
         <div className="font-medium">{title}</div>
       </div>
       <div className="text-sm text-gray-600">{children}</div>
+    </div>
+  );
+}
+
+function KPI({ value, label }: KPIProps) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm">
+      <div className="text-3xl font-extrabold">{value}</div>
+      <div className="mt-1 text-sm text-gray-600">{label}</div>
     </div>
   );
 }
@@ -212,7 +226,7 @@ export default function Home() {
       <section id="how" className="bg-[linear-gradient(180deg,#FAFAFA,white)] py-14">
         <div className="mx-auto max-w-6xl px-4">
           <h2 className="text-2xl font-bold">How it works</h2>
-          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             <StepCard step="1" title="Create activation">
               Name your campaign, add districts &amp; zones, assign supervisors.
             </StepCard>
@@ -270,6 +284,53 @@ export default function Home() {
             >
               Log in
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* KPI STRIP + TESTIMONIAL (Part C) */}
+      <section className="border-t border-gray-100 bg-white py-12">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-3">
+            <KPI value="12k+" label="Agent links generated" />
+            <KPI value="98.7%" label="Bot-filter accuracy" />
+            <KPI value="&gt;60%" label="Faster payout attribution" />
+          </div>
+
+          <div className="mt-10 rounded-2xl bg-gradient-to-r from-gray-900 to-gray-800 p-6 text-white">
+            <p className="text-lg">
+              “We finally see which zones and agents drive real installs. Weekly reporting is now automatic.”
+            </p>
+            <p className="mt-2 text-sm text-gray-300">— Campaign Manager, Consumer App</p>
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING TEASER (Part C) */}
+      <section id="pricing" className="bg-[linear-gradient(180deg,white,#FAFAFA)] py-14">
+        <div className="mx-auto max-w-6xl px-4 text-center">
+          <h2 className="text-2xl font-bold">Simple monthly pricing</h2>
+          <p className="mt-2 text-gray-600">Everything you need to run and measure activations.</p>
+
+          <div className="mx-auto mt-8 max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-end justify-center gap-1">
+              <span className="text-4xl font-extrabold">$960</span>
+              <span className="pb-1 text-gray-600">/ month</span>
+            </div>
+            <ul className="mt-4 space-y-2 text-left text-sm text-gray-700">
+              <li>• Unlimited activations, districts &amp; zones</li>
+              <li>• Unique links/QRs for agents + public stats</li>
+              <li>• Real-time dashboard + CSV exports</li>
+              <li>• Weekly performance report &amp; support</li>
+            </ul>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link href="/signup" className="rounded-lg bg-black px-5 py-3 text-sm font-medium text-white hover:bg-gray-900">
+                Start free
+              </Link>
+              <Link href="/login" className="rounded-lg border border-gray-200 bg-white px-5 py-3 text-sm font-medium hover:bg-gray-50">
+                Log in
+              </Link>
+            </div>
           </div>
         </div>
       </section>
