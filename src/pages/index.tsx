@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
-import { HeroChip, FeatureCard, StepCard, KPI, Reveal } from "@/components/landing/LandingSections";
+import { HeroChip, FeatureCard, StepCard, KPI } from "@/components/landing/LandingSections";
+import useReveal from "@/hooks/useReveal";
 
 export default function Home() {
+  useReveal();
+
   return (
     <main className="flex min-h-screen flex-col bg-white text-gray-900">
       {/* Background */}
@@ -108,34 +111,34 @@ export default function Home() {
           </p>
 
           <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Reveal style={{ animationDelay: "0ms" }}>
+            <div className="reveal" style={{ animationDelay: "0ms" }}>
               <FeatureCard
                 title="Multi-zone activations"
                 desc="Create campaigns by districts, add zones and supervisors, then onboard agents."
                 icon="grid"
               />
-            </Reveal>
-            <Reveal style={{ animationDelay: "75ms" }}>
+            </div>
+            <div className="reveal" style={{ animationDelay: "75ms" }}>
               <FeatureCard
                 title="Agent attribution"
                 desc="Auto-generate unique links per agent with a public stats page."
                 icon="user"
               />
-            </Reveal>
-            <Reveal style={{ animationDelay: "150ms" }}>
+            </div>
+            <div className="reveal" style={{ animationDelay: "150ms" }}>
               <FeatureCard
                 title="NFC & smart posters"
                 desc="Tap-to-open landing pages and compare performance by sticker tagline."
                 icon="nfc"
               />
-            </Reveal>
-            <Reveal style={{ animationDelay: "225ms" }}>
+            </div>
+            <div className="reveal" style={{ animationDelay: "225ms" }}>
               <FeatureCard
                 title="Smart redirects"
                 desc="Send users to the right app store or landing page automatically."
                 icon="redirect"
               />
-            </Reveal>
+            </div>
           </div>
         </div>
       </section>
@@ -145,28 +148,28 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-4">
           <h2 className="text-2xl font-bold">How it works</h2>
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Reveal style={{ animationDelay: "0ms" }}>
+            <div className="reveal" style={{ animationDelay: "0ms" }}>
               <StepCard step="1" title="Create activation">
                 Name your campaign, add districts &amp; zones, assign supervisors.
               </StepCard>
-            </Reveal>
-            <Reveal style={{ animationDelay: "75ms" }}>
+            </div>
+            <div className="reveal" style={{ animationDelay: "75ms" }}>
               <StepCard step="2" title="Add agents &amp; generate links">
                 Agents get unique links/QR codes automatically—no logins needed.
               </StepCard>
-            </Reveal>
-            <Reveal style={{ animationDelay: "150ms" }}>
+            </div>
+            <div className="reveal" style={{ animationDelay: "150ms" }}>
               <StepCard step="3" title="Track &amp; optimize">
                 See valid clicks over time, top zones/agents and export CSVs.
               </StepCard>
-            </Reveal>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Dashboard Preview Card */}
       <section className="mx-auto max-w-6xl px-6 pb-12">
-        <Reveal>
+        <div className="reveal">
           <div className="rounded-3xl border bg-white p-6 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -187,12 +190,12 @@ export default function Home() {
               (Dashboard Preview Placeholder)
             </div>
           </div>
-        </Reveal>
+        </div>
       </section>
 
       {/* CTA Band */}
       <section className="mx-auto max-w-6xl px-6 pb-16">
-        <Reveal>
+        <div className="reveal">
           <div className="flex flex-col items-center justify-between gap-6 rounded-2xl border bg-gradient-to-r from-black via-gray-900 to-gray-800 p-8 text-white shadow-lg sm:flex-row">
             <div>
               <div className="text-lg font-medium">Ready to measure real-world impact?</div>
@@ -213,32 +216,32 @@ export default function Home() {
               </Link>
             </div>
           </div>
-        </Reveal>
+        </div>
       </section>
 
       {/* KPI STRIP + TESTIMONIAL */}
       <section className="border-t border-gray-100 bg-white py-12">
         <div className="mx-auto max-w-6xl px-4">
           <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-3">
-            <Reveal style={{ animationDelay: "0ms" }}>
+            <div className="reveal" style={{ animationDelay: "0ms" }}>
               <KPI value="12k+" label="Agent links generated" />
-            </Reveal>
-            <Reveal style={{ animationDelay: "75ms" }}>
+            </div>
+            <div className="reveal" style={{ animationDelay: "75ms" }}>
               <KPI value="98.7%" label="Bot-filter accuracy" />
-            </Reveal>
-            <Reveal style={{ animationDelay: "150ms" }}>
+            </div>
+            <div className="reveal" style={{ animationDelay: "150ms" }}>
               <KPI value="&gt;60%" label="Faster payout attribution" />
-            </Reveal>
+            </div>
           </div>
 
-          <Reveal style={{ animationDelay: "200ms" }}>
+          <div className="reveal" style={{ animationDelay: "200ms" }}>
             <div className="mt-10 rounded-2xl bg-gradient-to-r from-gray-900 to-gray-800 p-6 text-white">
               <p className="text-lg">
                 “We finally see which zones and agents drive real installs. Weekly reporting is now automatic.”
               </p>
               <p className="mt-2 text-sm text-gray-300">— Campaign Manager, Consumer App</p>
             </div>
-          </Reveal>
+          </div>
         </div>
       </section>
 
@@ -248,7 +251,7 @@ export default function Home() {
           <h2 className="text-2xl font-bold">Simple monthly pricing</h2>
           <p className="mt-2 text-gray-600">Everything you need to run and measure activations.</p>
 
-          <Reveal style={{ animationDelay: "0ms" }}>
+          <div className="reveal" style={{ animationDelay: "0ms" }}>
             <div className="mx-auto mt-8 max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="flex items-end justify-center gap-1">
                 <span className="text-4xl font-extrabold">$960</span>
@@ -269,7 +272,7 @@ export default function Home() {
                 </Link>
               </div>
             </div>
-          </Reveal>
+          </div>
         </div>
       </section>
 
