@@ -1,4 +1,4 @@
-
+"use client";
 import React, { useState } from "react";
 
 export default function EnsureDefaultLinkButton({ zoneId }: { zoneId: string }) {
@@ -40,4 +40,3 @@ export default function EnsureDefaultLinkButton({ zoneId }: { zoneId: string }) 
     </div>
   );
 }
-  

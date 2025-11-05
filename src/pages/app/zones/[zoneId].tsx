@@ -71,6 +71,7 @@ const ZonePage: NextPage<{ zoneId: string }> = () => {
   }
 
   const { zone, defaultLink, agents } = data;
+  const zonesHref = zone.district_id ? `/app/districts/${zone.district_id}/zones` : "/app/districts";
 
   return (
     <div className="space-y-6 p-4">
@@ -79,7 +80,7 @@ const ZonePage: NextPage<{ zoneId: string }> = () => {
           <div className="text-sm text-gray-500">
             <Link href="/app/districts" className="hover:underline">Districts</Link>
             {" / "}
-            <Link href={`/app/districts/${zone.district_id || ""}/zones`} className="hover:underline">
+            <Link href={zonesHref} className="hover:underline">
               Zones
             </Link>
             {" / "}
@@ -117,7 +118,9 @@ const ZonePage: NextPage<{ zoneId: string }> = () => {
             {agents.map((a) => (
               <div key={a.id} className="rounded-xl border p-4 bg-white">
                 <div className="font-medium">{a.name}</div>
-                <div className="text-xs text-gray-600 mt-1">{new Date(a.created_at).toLocaleString()}</div>
+                <div className="text-xs text-gray-600 mt-1">
+                  {new Date(a.created_at).toLocaleString(undefined, { timeZone: "UTC" })}
+                </div>
                 <div className="mt-3 space-y-1">
                   {a.links?.length ? (
                     a.links.map((l) => (
