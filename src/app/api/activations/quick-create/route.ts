@@ -4,8 +4,7 @@ import { cookies } from "next/headers";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { customAlphabet } from "nanoid";
 
-const nanoSlug = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz", 8);
-const nanoToken = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz", 21);
+const nano = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz", 8);
 
 export async function POST(req: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
@@ -69,71 +68,51 @@ export async function POST(req: NextRequest) {
     })
     .select("id")
     .single();
-  if (actErr || !act) {
-    return NextResponse.json({ ok: false, error: `activation insert: ${actErr?.message || "no row returned"}` }, { status: 400 });
-  }
+  if (actErr) return NextResponse.json({ ok:false, error:`activation insert: ${actErr.message}` }, { status:400 });
 
-  // Create zones
+  // 5) create default district
+  const { data: district, error: dErr } = await supabase
+    .from("districts")
+    .insert({ organization_id, activation_id: act.id, name: "Ungrouped" })
+    .select("id")
+    .single();
+  if (dErr) return NextResponse.json({ ok:false, error:`district insert: ${dErr.message}` }, { status:400 });
+
+  // 6) zones (attach to default district)
   const zonesPayload = Array.from({ length: zonesCount }).map((_, i) => ({
-    organization_id,
-    activation_id: act.id,
-    name: `Zone ${i + 1}`,
+    organization_id, activation_id: act.id, name: `Zone ${i+1}`, district_id: district.id
   }));
   const { data: zones, error: zErr } = await supabase
-    .from("zones")
-    .insert(zonesPayload)
-    .select("id, name");
-  if (zErr || !zones) {
-    return NextResponse.json({ ok: false, error: `zones insert: ${zErr?.message || "no rows returned"}` }, { status: 400 });
-  }
+    .from("zones").insert(zonesPayload).select("id, name, district_id");
+  if (zErr) return NextResponse.json({ ok:false, error:`zones insert: ${zErr.message}` }, { status:400 });
 
-  // Create agents + zone assignments + links
-  for (const z of zones) {
-    // Agents (org-scoped); token used for public stats page
+  // 7) agents + links (same as your current code; keep zone_id usage if you have it,
+  // OR if you use zone_agents join table, keep that logic accordingly)
+  for (const z of zones || []) {
+    // Create org-scoped agents; we use zone_agents for assignment
     const agentsPayload = Array.from({ length: agentsPerZone }).map((_, j) => ({
-      organization_id,
-      name: `Agent ${j + 1}`,
-      public_stats_token: nanoToken(),
-      active: true,
+      organization_id, name: `Agent ${j+1}`, active: true, public_stats_token: nano()
     }));
     const { data: agents, error: aErr } = await supabase
-      .from("agents")
-      .insert(agentsPayload)
-      .select("id");
-    if (aErr || !agents) {
-      return NextResponse.json({ ok: false, error: `agents insert: ${aErr?.message || "no rows returned"}` }, { status: 400 });
-    }
+      .from("agents").insert(agentsPayload).select("id");
+    if (aErr) return NextResponse.json({ ok:false, error:`agents insert: ${aErr.message}` }, { status:400 });
 
-    // Zone assignments
-    const zoneAgentsPayload = agents.map((a: any) => ({
-      organization_id,
-      zone_id: z.id,
-      agent_id: a.id,
+    // Assign agents to zone via join table
+    const zoneAgentsPayload = (agents || []).map(a => ({
+      organization_id, zone_id: z.id, agent_id: a.id
     }));
     const { error: zaErr } = await supabase.from("zone_agents").insert(zoneAgentsPayload);
-    if (zaErr) {
-      return NextResponse.json({ ok: false, error: `zone_agents insert: ${zaErr.message}` }, { status: 400 });
-    }
+    if (zaErr) return NextResponse.json({ ok:false, error:`zone_agents insert: ${zaErr.message}` }, { status:400 });
 
-    // Tracked links per agent
-    const linksPayload = agents.map((a: any) => ({
-      organization_id,
-      activation_id: act.id,
-      zone_id: z.id,
-      agent_id: a.id,
-      slug: nanoSlug(),
-      destination_strategy: "single",
-      single_url: redirect_url,
-      fallback_url: redirect_url,
-      is_active: true,
-      notes: `${z.name} — agent link`,
+    // Create tracked links for each agent
+    const linksPayload = (agents || []).map(a => ({
+      organization_id, activation_id: act.id, zone_id: z.id, agent_id: a.id,
+      slug: nano(), destination_strategy: "single", single_url: redirect_url, fallback_url: redirect_url, is_active: true,
+      notes: `${z.name} — agent link`
     }));
     const { error: lErr } = await supabase.from("tracked_links").insert(linksPayload);
-    if (lErr) {
-      return NextResponse.json({ ok: false, error: `links insert: ${lErr.message}` }, { status: 400 });
-    }
+    if (lErr) return NextResponse.json({ ok:false, error:`links insert: ${lErr.message}` }, { status:400 });
   }
 
-  return NextResponse.json({ ok: true, activation_id: act.id });
+  return NextResponse.json({ ok:true, activation_id: act.id });
 }
-  
