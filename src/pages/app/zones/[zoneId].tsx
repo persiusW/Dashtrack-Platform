@@ -1,145 +1,143 @@
-
-import { AppLayout } from "@/components/layouts/AppLayout";
+import React, { useEffect, useState } from "react";
+import type { NextPage } from "next";
+import Link from "next/link";
+import AddAgentDialog from "@/components/AddAgentDialog";
+import EnsureDefaultLinkButton from "@/components/EnsureDefaultLinkButton";
 import { useRouter } from "next/router";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Link2, Edit, BarChart3 } from "lucide-react";
 
-export default function ZoneDetailPage() {
+type AgentLink = {
+  id: string;
+  slug: string;
+  description: string | null;
+  redirect_url: string | null;
+  created_at?: string;
+};
+
+type AgentItem = {
+  id: string;
+  name: string;
+  created_at: string;
+  links: AgentLink[];
+};
+
+type ZoneDetail = {
+  ok: boolean;
+  zone: { id: string; name: string; activation_id: string; district_id: string | null; organization_id: string };
+  defaultLink: AgentLink | null;
+  agents: AgentItem[];
+};
+
+const ZonePage: NextPage<{ zoneId: string }> = () => {
+  const [data, setData] = useState<ZoneDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { zoneId } = router.query;
+  const [zoneId, setZoneId] = useState<string>("");
 
-  const zone = {
-    id: zoneId,
-    name: "Downtown Store",
-    address: "123 Main St, City Center",
-    lat: 40.7128,
-    lng: -74.0060,
-    activation: "Summer Campaign 2024",
-    agents_count: 8,
-    total_clicks: 1245,
-    unique_clicks: 892,
-  };
+  useEffect(() => {
+    const id = router.query.zoneId;
+    if (typeof id === "string") {
+      setZoneId(id);
+    }
+  }, [router.query.zoneId]);
+
+  useEffect(() => {
+    if (!zoneId) return;
+    async function load() {
+      try {
+        setLoading(true);
+        const r = await fetch(`/api/zones/${zoneId}/detail`, { cache: "no-store" });
+        const j = await r.json();
+        setData(j);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [zoneId]);
+
+  if (loading) {
+    return <div className="p-4">Loading…</div>;
+  }
+
+  if (!data?.ok || !data.zone) {
+    return (
+      <div className="max-w-xl mx-auto text-center mt-16">
+        <h2 className="text-2xl font-semibold">Zone not found</h2>
+        <a className="inline-block mt-6 bg-black text-white px-4 py-2 rounded" href="/app/districts">
+          Back to Districts
+        </a>
+      </div>
+    );
+  }
+
+  const { zone, defaultLink, agents } = data;
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center space-x-3 mb-2">
-              <MapPin className="h-8 w-8 text-blue-600" />
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {zone.name}
-              </h1>
-            </div>
-            <p className="text-gray-600 dark:text-gray-400">{zone.address}</p>
-            <Badge variant="secondary" className="mt-2">
-              {zone.activation}
-            </Badge>
+    <div className="space-y-6 p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm text-gray-500">
+            <Link href="/app/districts" className="hover:underline">Districts</Link>
+            {" / "}
+            <Link href={`/app/districts/${zone.district_id || ""}/zones`} className="hover:underline">
+              Zones
+            </Link>
+            {" / "}
+            {zone.name}
           </div>
-          <Button variant="outline">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Zone
-          </Button>
+          <h1 className="text-2xl font-bold">Zone details</h1>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Clicks</CardTitle>
-              <BarChart3 className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{zone.total_clicks.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">+15% from last week</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Unique Visitors</CardTitle>
-              <Users className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{zone.unique_clicks.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">71.6% conversion</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Agents</CardTitle>
-              <Users className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{zone.agents_count}</div>
-              <p className="text-xs text-muted-foreground">All active</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Zone Information</CardTitle>
-              <CardDescription>Location details and settings</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Address</p>
-                <p className="text-lg">{zone.address}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Latitude</p>
-                  <p className="text-lg">{zone.lat}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Longitude</p>
-                  <p className="text-lg">{zone.lng}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Assigned Agents</CardTitle>
-              <CardDescription>Agents working in this zone</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded border">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 mr-3" />
-                      <div>
-                        <p className="font-medium">Agent {i}</p>
-                        <p className="text-sm text-muted-foreground">Active</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">{(150 - i * 20)}</p>
-                      <p className="text-xs text-muted-foreground">clicks</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Zone Stand Link</CardTitle>
-            <CardDescription>QR code link for this zone</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Zone stand link configuration placeholder</p>
-          </CardContent>
-        </Card>
+        <AddAgentDialog zoneId={zone.id} />
       </div>
-    </AppLayout>
+
+      <div className="rounded-xl border p-4 bg-white">
+        <div className="flex items-center justify-between">
+          <div className="font-medium">Default zone link</div>
+          <EnsureDefaultLinkButton zoneId={zone.id} />
+        </div>
+        {defaultLink ? (
+          <div className="mt-2 text-sm">
+            <div className="truncate">/{defaultLink.slug}</div>
+            <div className="text-gray-600 truncate">→ {defaultLink.redirect_url}</div>
+            {defaultLink.description && (
+              <div className="text-xs text-gray-500 mt-1">{defaultLink.description}</div>
+            )}
+          </div>
+        ) : (
+          <div className="mt-2 text-sm text-gray-600">No default link yet. Click "Ensure default link".</div>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        <div className="text-lg font-semibold">Agents</div>
+        {!agents?.length ? (
+          <div className="rounded-xl border p-4 bg-white text-gray-600">No agents yet. Use “Add Agent”.</div>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {agents.map((a) => (
+              <div key={a.id} className="rounded-xl border p-4 bg-white">
+                <div className="font-medium">{a.name}</div>
+                <div className="text-xs text-gray-600 mt-1">{new Date(a.created_at).toLocaleString()}</div>
+                <div className="mt-3 space-y-1">
+                  {a.links?.length ? (
+                    a.links.map((l) => (
+                      <div key={l.id} className="text-sm">
+                        <div className="truncate">/{l.slug}</div>
+                        <div className="text-gray-600 truncate">→ {l.redirect_url}</div>
+                        {l.description && <div className="text-xs text-gray-500">{l.description}</div>}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500">No link yet</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
-}
+};
+
+export default ZonePage;
