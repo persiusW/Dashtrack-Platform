@@ -1,6 +1,6 @@
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { AppLayout } from "@/components/layouts/AppLayout";
 import { RowActions } from "@/components/RowActions";
@@ -101,6 +101,11 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
 };
 
 export default function DistrictsPage({ orgId, activation, districts, zoneCounts }: Props) {
+  const [items, setItems] = useState<District[]>(districts ?? []);
+  const [counts, setCounts] = useState<Map<string, number>>(
+    () => new Map(zoneCounts.map((z) => [z.districtId, z.count]))
+  );
+
   if (!orgId) {
     return (
       <AppLayout>
@@ -124,11 +129,6 @@ export default function DistrictsPage({ orgId, activation, districts, zoneCounts
       </AppLayout>
     );
   }
-
-  const [items, setItems] = useState<District[]>(districts ?? []);
-  const [counts, setCounts] = useState<Map<string, number>>(
-    () => new Map(zoneCounts.map((z) => [z.districtId, z.count]))
-  );
 
   const hasItems = items && items.length > 0;
 
