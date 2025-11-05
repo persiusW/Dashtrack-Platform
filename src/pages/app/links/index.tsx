@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Copy, ExternalLink, Plus, Search } from "lucide-react";
-import type { TrackedLink } from "@/services/trackedLinkService";
 import { trackedLinkService } from "@/services/trackedLinkService";
 import { RenameDialog } from "@/components/RenameDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -24,9 +23,18 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 
+type LinkRow = {
+  id: string;
+  slug: string;
+  is_active: boolean | null;
+  created_at: string | null;
+  description: string | null;
+  redirect_url: string | null;
+};
+
 type LinksProps = {
   organizationId: string | null;
-  links: Pick<TrackedLink, "id" | "slug" | "is_active" | "created_at" | "description" | "redirect_url">[];
+  links: LinkRow[];
 };
 
 export const getServerSideProps: GetServerSideProps<LinksProps> = async (ctx) => {
@@ -70,7 +78,7 @@ export const getServerSideProps: GetServerSideProps<LinksProps> = async (ctx) =>
       .select("id, slug, is_active, created_at, description, redirect_url")
       .eq("organization_id", organizationId)
       .order("created_at", { ascending: false });
-    links = (data as any) || [];
+    links = (data as LinkRow[]) || [];
   }
 
   return {
@@ -80,7 +88,7 @@ export const getServerSideProps: GetServerSideProps<LinksProps> = async (ctx) =>
 
 export default function LinksPage({ organizationId, links: initialLinks }: LinksProps) {
   const { toast } = useToast();
-  const [links, setLinks] = useState(initialLinks);
+  const [links, setLinks] = useState<LinkRow[]>(initialLinks);
   const [search, setSearch] = useState("");
   const [renaming, setRenaming] = useState<{ id: string; description: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; slug: string } | null>(null);
@@ -362,11 +370,6 @@ function RedirectDialog({
   const [url, setUrl] = useState<string>(initialUrl || "");
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState("");
-
-  // keep local state in sync when opened for a different row
-  const resetOnOpen = useMemo(() => initialUrl, [initialUrl]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _sync = resetOnOpen; // dependency placeholder to satisfy linting in this context
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) onCancel();
