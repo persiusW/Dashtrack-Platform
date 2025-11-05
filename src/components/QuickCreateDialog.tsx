@@ -16,11 +16,12 @@ export default function QuickCreateDialog({ open, onClose }: { open:boolean; onC
     const r = await fetch("/api/activations/quick-create", {
       method:"POST",
       headers: { "Content-Type":"application/json" },
+      credentials: "same-origin",
       body: JSON.stringify({ name, zones, agentsPerZone: agents, redirect_url: redirectUrl })
     });
-    const j = await r.json();
+    const j = await r.json().catch(() => null);
     setBusy(false);
-    if (!j.ok) { setErr(j.error||"Failed"); return; }
+    if (!r.ok || !j?.ok) { setErr((j && j.error) || "Failed"); return; }
     window.location.assign("/app/activations");
   }
 

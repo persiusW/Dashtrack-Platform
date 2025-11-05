@@ -55,13 +55,13 @@ export default async function handler(
 
     const { organizationName, plan } = parsed.data;
 
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single();
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .maybeSingle();
 
-    if (existingUser?.organization_id) {
+    if (existingProfile?.organization_id) {
       return res.status(400).json({ 
         ok: false, 
         error: 'User already belongs to an organization' 

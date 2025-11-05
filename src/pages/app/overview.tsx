@@ -43,13 +43,28 @@ export const getServerSideProps: GetServerSideProps<OverviewProps> = async (ctx)
   let organizationId: string | null = null;
 
   if (userId) {
-    const { data: userRow } = await supabase
-      .from("users")
+    const { data: profile } = await supabase
+      .from("profiles")
       .select("organization_id")
       .eq("id", userId)
       .maybeSingle();
-    if (userRow?.organization_id) {
-      organizationId = userRow.organization_id;
+
+    if (profile?.organization_id) {
+      organizationId = profile.organization_id;
+    }
+  }
+
+  if (!organizationId && userId) {
+    const { data: ownedOrg } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("owner_user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (ownedOrg?.id) {
+      organizationId = ownedOrg.id;
     }
   }
 
