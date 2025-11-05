@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRouteUserAndOrg } from "@/lib/org";
 
-export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params;
   const { user, orgId, supa } = await getRouteUserAndOrg();
   if (!user) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   if (!orgId) return NextResponse.json({ ok: false, error: "No organization" }, { status: 400 });
@@ -29,8 +29,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
+export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params;
   const { user, orgId, supa } = await getRouteUserAndOrg();
   if (!user) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   if (!orgId) return NextResponse.json({ ok: false, error: "No organization" }, { status: 400 });
