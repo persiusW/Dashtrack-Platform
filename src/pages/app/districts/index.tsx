@@ -1,8 +1,11 @@
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { AppLayout } from "@/components/layouts/AppLayout";
+import { RowActions } from "@/components/RowActions";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { RenameDialog } from "@/components/RenameDialog";
 
 type Activation = { id: string; name: string };
 type District = { id: string; name: string; created_at: string | null };
@@ -48,7 +51,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
     };
   }
 
-  // Latest activation for this org
   const { data: act } = await supabase
     .from("activations")
     .select("id, name, created_at")
@@ -68,14 +70,12 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
     };
   }
 
-  // Districts for this activation
   const { data: dList } = await supabase
     .from("districts")
     .select("id, name, created_at")
     .eq("activation_id", act.id)
     .order("created_at", { ascending: true });
 
-  // Zones for this activation (for counts)
   const { data: zList } = await supabase
     .from("zones")
     .select("id, district_id")
@@ -125,7 +125,25 @@ export default function DistrictsPage({ orgId, activation, districts, zoneCounts
     );
   }
 
-  const getCount = (id: string) => zoneCounts.find((c) => c.districtId === id)?.count ?? 0;
+  const [items, setItems] = useState<District[]>(districts ?? []);
+  const [counts, setCounts] = useState<Map<string, number>>(
+    () => new Map(zoneCounts.map((z) => [z.districtId, z.count]))
+  );
+
+  const hasItems = items && items.length > 0;
+
+  const handleRenamed = (id: string, newName: string) => {
+    setItems((prev) => prev.map((d) => (d.id === id ? { ...d, name: newName } : d)));
+  };
+
+  const handleDeleted = (id: string) => {
+    setItems((prev) => prev.filter((d) => d.id !== id));
+    setCounts((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  };
 
   return (
     <AppLayout>
@@ -135,7 +153,7 @@ export default function DistrictsPage({ orgId, activation, districts, zoneCounts
           <CreateDistrictButton activationId={activation.id} />
         </div>
 
-        {!districts?.length ? (
+        {!hasItems ? (
           <CenterCard
             title="No districts yet"
             subtitle="Start with 'Ungrouped' or create your first district."
@@ -146,28 +164,117 @@ export default function DistrictsPage({ orgId, activation, districts, zoneCounts
           </CenterCard>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {districts.map((d) => {
+            {items.map((d) => {
               const ts = d.created_at
-                ? new Date(d.created_at).toISOString().replace("T", " ").slice(0, 16)
+                ? new Date(d.created_at as unknown as string).toISOString().replace("T", " ").slice(0, 16)
                 : "";
+              const zoneCount = counts.get(d.id) ?? 0;
               return (
-                <Link
+                <DistrictCard
                   key={d.id}
-                  href={`/app/districts/${d.id}/zones`}
-                  className="block rounded-xl border p-4 bg-white hover:bg-gray-50"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium">{d.name}</div>
-                    <div className="text-xs text-gray-600">{getCount(d.id)} zones</div>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">{ts}</div>
-                </Link>
+                  d={d}
+                  ts={ts}
+                  zoneCount={zoneCount}
+                  onRenamed={handleRenamed}
+                  onDeleted={handleDeleted}
+                />
               );
             })}
           </div>
         )}
       </div>
     </AppLayout>
+  );
+}
+
+function DistrictCard({
+  d,
+  ts,
+  zoneCount,
+  onRenamed,
+  onDeleted,
+}: {
+  d: District;
+  ts: string;
+  zoneCount: number;
+  onRenamed: (id: string, newName: string) => void;
+  onDeleted: (id: string) => void;
+}) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function doDelete() {
+    try {
+      setBusy(true);
+      const r = await fetch(`/api/districts/${d.id}`, { method: "DELETE" });
+      const j = await r.json().catch(() => ({}));
+      setConfirmOpen(false);
+      if (!r.ok || !j?.ok) {
+        alert((j && j.error) || "Delete failed");
+        return;
+      }
+      onDeleted(d.id);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doRename(name: string) {
+    try {
+      setBusy(true);
+      const r = await fetch(`/api/districts/${d.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j?.ok) {
+        alert((j && j.error) || "Update failed");
+        return;
+      }
+      setRenameOpen(false);
+      onRenamed(d.id, name);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="block rounded-xl border p-4 bg-white hover:bg-gray-50">
+      <div className="flex items-center justify-between">
+        <Link href={`/app/districts/${d.id}/zones`} className="font-medium truncate">
+          {d.name}
+        </Link>
+        <RowActions
+          onRename={() => setRenameOpen(true)}
+          onDelete={() => setConfirmOpen(true)}
+          size="sm"
+          disabled={busy}
+        />
+      </div>
+      <div className="flex items-center justify-between mt-1">
+        <div className="text-xs text-gray-600">{zoneCount} zones</div>
+        <div className="text-xs text-gray-500">{ts}</div>
+      </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={doDelete}
+        title="Delete district?"
+        message={`This will permanently delete "${d.name}".`}
+        confirmLabel="Delete"
+      />
+      <RenameDialog
+        open={renameOpen}
+        onCancel={() => setRenameOpen(false)}
+        onSave={doRename}
+        initial={d.name}
+        title="Rename district"
+        label="District name"
+      />
+    </div>
   );
 }
 
@@ -243,7 +350,7 @@ function CreateDistrictDialog({
       const j = await r.json().catch(() => null);
       setBusy(false);
       if (!r.ok || !j?.ok) {
-        setErr((j && j.error) || "Failed");
+        setErr((j && (j as any).error) || "Failed");
         return;
       }
       window.location.reload();
