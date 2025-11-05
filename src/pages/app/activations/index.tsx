@@ -4,7 +4,7 @@ import type { GetServerSideProps } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
 import { AppLayout } from "@/components/layouts/AppLayout";
-import QuickCreateDialog from "@/components/QuickCreateDialog";
+import GuidedCreateDialog from "@/components/GuidedCreateDialog";
 
 type Activation = {
   id: string;
@@ -130,7 +130,7 @@ function CreateButton() {
       <button className="bg-black text-white px-4 py-2 rounded" onClick={() => setOpen(true)}>
         Create Activation
       </button>
-      <QuickCreateDialog open={open} onClose={() => setOpen(false)} />
+      <GuidedCreateDialog open={open} onClose={() => setOpen(false)} />
     </>
   );
 }
@@ -144,8 +144,7 @@ function EmptyCreateActivation() {
       <button className="mt-6 bg-black text-white px-4 py-2 rounded" onClick={() => setOpen(true)}>
         Create Activation
       </button>
-      <QuickCreateDialog open={open} onClose={() => setOpen(false)} />
+      <GuidedCreateDialog open={open} onClose={() => setOpen(false)} />
     </div>
   );
 }
-  

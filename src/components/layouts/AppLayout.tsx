@@ -31,8 +31,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigation = [
     { name: "Overview", href: "/app/overview", icon: LayoutDashboard },
     { name: "Activations", href: "/app/activations", icon: FolderKanban },
-    { name: "Zones", href: "/app/zones", icon: MapPin },
     { name: "Districts", href: "/app/districts", icon: MapPin },
+    { name: "Zones", href: "/app/zones", icon: MapPin },
     { name: "Agents", href: "/app/agents", icon: Users },
     { name: "Links", href: "/app/links", icon: Link2 },
   ];

@@ -20,6 +20,7 @@ import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { Button } from "@/components/ui/button";
 import QuickCreateDialog from "@/components/QuickCreateDialog";
 import Link from "next/link";
+import GuidedCreateDialog from "@/components/GuidedCreateDialog";
 
 type OverviewProps = {
   initialActivationsCount: number;
@@ -196,7 +197,7 @@ export default function OverviewPage({ initialActivationsCount, organizationId }
           </div>
         </div>
 
-        <QuickCreateDialog
+        <GuidedCreateDialog
           open={showQuickCreate}
           onClose={() => setShowQuickCreate(false)}
         />
