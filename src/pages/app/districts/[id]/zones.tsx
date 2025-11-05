@@ -1,11 +1,9 @@
+
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
 import { useState } from "react";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { AppLayout } from "@/components/layouts/AppLayout";
-import { RowActions } from "@/components/RowActions";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { RenameDialog } from "@/components/RenameDialog";
 
 type District = { id: string; name: string; activation_id: string };
 type Zone = { id: string; name: string; created_at: string | null };
@@ -56,7 +54,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
 };
 
 export default function DistrictZonesPage({ district, zones }: Props) {
-  const [items, setItems] = useState<Zone[]>(zones ?? []);
+  const [items] = useState<Zone[]>(zones ?? []);
 
   if (!district) {
     return (
@@ -70,14 +68,6 @@ export default function DistrictZonesPage({ district, zones }: Props) {
       </AppLayout>
     );
   }
-
-  const handleRenamed = (id: string, newName: string) => {
-    setItems((prev) => prev.map((z) => (z.id === id ? { ...z, name: newName } : z)));
-  };
-
-  const handleDeleted = (id: string) => {
-    setItems((prev) => prev.filter((z) => z.id !== id));
-  };
 
   return (
     <AppLayout>
@@ -104,108 +94,22 @@ export default function DistrictZonesPage({ district, zones }: Props) {
           </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {items.map((z) => {
-              const ts = z.created_at
-                ? new Date(z.created_at as unknown as string).toISOString().replace("T", " ").slice(0, 16)
-                : "";
-              return (
-                <ZoneCard
-                  key={z.id}
-                  z={z}
-                  ts={ts}
-                  onRenamed={handleRenamed}
-                  onDeleted={handleDeleted}
-                />
-              );
-            })}
+            {items.map((z) => (
+              <a
+                key={z.id}
+                href={`/app/districts/${district.id}/zones/${z.id}`}
+                className="rounded-xl border p-4 bg-white hover:bg-gray-50 block"
+              >
+                <div className="font-medium">{z.name}</div>
+                <div className="text-xs text-gray-600 mt-1">
+                  {new Date((z.created_at as unknown) as string).toLocaleString()}
+                </div>
+              </a>
+            ))}
           </div>
         )}
       </div>
     </AppLayout>
-  );
-}
-
-function ZoneCard({
-  z,
-  ts,
-  onRenamed,
-  onDeleted,
-}: {
-  z: Zone;
-  ts: string;
-  onRenamed: (id: string, newName: string) => void;
-  onDeleted: (id: string) => void;
-}) {
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  async function doDelete() {
-    try {
-      setBusy(true);
-      const r = await fetch(`/api/zones/${z.id}`, { method: "DELETE" });
-      const j = await r.json().catch(() => ({}));
-      setConfirmOpen(false);
-      if (!r.ok || !j?.ok) {
-        alert((j && j.error) || "Delete failed");
-        return;
-      }
-      onDeleted(z.id);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function doRename(name: string) {
-    try {
-      setBusy(true);
-      const r = await fetch(`/api/zones/${z.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || !j?.ok) {
-        alert((j && j.error) || "Update failed");
-        return;
-      }
-      setRenameOpen(false);
-      onRenamed(z.id, name);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="rounded-xl border p-4 bg-white hover:bg-gray-50">
-      <div className="flex items-center justify-between">
-        <div className="font-medium truncate">{z.name}</div>
-        <RowActions
-          onRename={() => setRenameOpen(true)}
-          onDelete={() => setConfirmOpen(true)}
-          size="sm"
-          disabled={busy}
-        />
-      </div>
-      <div className="text-xs text-gray-600 mt-1">{ts}</div>
-
-      <ConfirmDialog
-        open={confirmOpen}
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={doDelete}
-        title="Delete zone?"
-        message={`This will permanently delete "${z.name}".`}
-        confirmLabel="Delete"
-      />
-      <RenameDialog
-        open={renameOpen}
-        onCancel={() => setRenameOpen(false)}
-        onSave={doRename}
-        initial={z.name}
-        title="Rename zone"
-        label="Zone name"
-      />
-    </div>
   );
 }
 
@@ -284,3 +188,4 @@ function CreateZoneDialog({ districtId, onClose }: { districtId: string; onClose
     </div>
   );
 }
+  
