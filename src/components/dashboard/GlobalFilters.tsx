@@ -1,4 +1,3 @@
-
 import { useGlobalFilters } from "@/hooks/useGlobalFilters";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,14 +9,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { activationService, Activation } from "@/services/activationService";
+import { activationService, ActivationOption } from "@/services/activationService";
 import { zoneService, Zone } from "@/services/zoneService";
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
 export function GlobalFilters() {
   const { filters, updateFilters, clearFilters } = useGlobalFilters();
-  const [activations, setActivations] = useState<Activation[]>([]);
+  const [activations, setActivations] = useState<ActivationOption[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +34,7 @@ export function GlobalFilters() {
 
   const loadActivations = async () => {
     try {
-      const data = await activationService.getActivations();
+      const data = await activationService.getActivationOptions();
       setActivations(data);
     } catch (error) {
       console.error("Failed to load activations:", error);

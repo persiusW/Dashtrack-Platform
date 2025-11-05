@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Activation {
@@ -15,6 +14,11 @@ export interface Activation {
   updated_at: string;
 }
 
+export interface ActivationOption {
+  id: string;
+  name: string;
+}
+
 export const activationService = {
   /**
    * Get all activations for the current organization
@@ -27,6 +31,17 @@ export const activationService = {
 
     if (error) throw error;
     return data as Activation[];
+  },
+
+  /**
+   * Get activation options (id, name) for the current user's org via server API
+   */
+  async getActivationOptions(): Promise<ActivationOption[]> {
+    const res = await fetch("/api/activations/list", { credentials: "same-origin" });
+    const j = await res.json().catch(() => null as any);
+    if (!res.ok || !j?.ok) return [];
+    const items = Array.isArray(j.items) ? j.items : [];
+    return items.map((x: any) => ({ id: String(x.id), name: String(x.name || "") }));
   },
 
   /**
