@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Copy, ExternalLink, Pencil, Trash2, Plus, Search } from "lucide-react";
+import { Copy, ExternalLink, Plus, Search } from "lucide-react";
 import type { TrackedLink } from "@/services/trackedLinkService";
 import { trackedLinkService } from "@/services/trackedLinkService";
 import { RenameDialog } from "@/components/RenameDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import { RowActions } from "@/components/RowActions";
 
 type LinksProps = {
   organizationId: string | null;
@@ -231,24 +232,12 @@ export default function LinksPage({ organizationId, links: initialLinks }: Links
                       <Button variant="outline" size="sm" onClick={() => handleOpenLink(link.slug)} disabled={disabled}>
                         <ExternalLink className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="outline"
+                      <RowActions
+                        onRename={() => handleStartRename(link.id, link.slug)}
+                        onDelete={() => setConfirmDelete({ id: link.id, slug: link.slug })}
                         size="sm"
-                        onClick={() => handleStartRename(link.id, link.slug)}
                         disabled={disabled}
-                      >
-                        <Pencil className="h-4 w-4 mr-1" />
-                        Rename
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setConfirmDelete({ id: link.id, slug: link.slug })}
-                        disabled={disabled}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
+                      />
                     </div>
                   </div>
                 );
@@ -284,4 +273,3 @@ export default function LinksPage({ organizationId, links: initialLinks }: Links
     </AppLayout>
   );
 }
-  
