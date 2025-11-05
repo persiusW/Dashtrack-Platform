@@ -513,8 +513,8 @@ function CreateLinkDialog({
         slug: created.slug,
         is_active: (created as any).is_active ?? true,
         created_at: (created as any).created_at ?? new Date().toISOString(),
-        description: created.description ?? null,
-        redirect_url: ((created as any).single_url as string) || ((created as any).fallback_url as string) || "",
+        description: trimmedDesc || null,
+        redirect_url: trimmedUrl,
       };
 
       onCreated(newLink);
