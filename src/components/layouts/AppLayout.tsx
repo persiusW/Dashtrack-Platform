@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Toaster } from "@/components/ui/toaster";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -185,6 +186,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </header>
 
         <main className="p-6">{children}</main>
+        <Toaster />
       </div>
     </div>
   );
