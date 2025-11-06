@@ -1,5 +1,5 @@
 import PageHeader from "@/components/dashboard/PageHeader";
-import CopyButton from "@/components/CopyButton";
+import { CopyButton } from "@/components/CopyButton";
 import { cookies } from "next/headers";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
