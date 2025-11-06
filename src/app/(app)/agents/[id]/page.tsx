@@ -1,12 +1,62 @@
 
 import PageHeader from "@/components/dashboard/PageHeader";
-import CopyButton from "@/components/ui/CopyButton";
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 
+type Agent = {
+  id: string;
+  name: string;
+  organization_id: string;
+};
+
+type TrackedLinkLite = {
+  id: string;
+  slug: string;
+  activation_id: string | null;
+  zone_id: string | null;
+};
+
+type ZoneLite = {
+  id: string;
+  name: string;
+  district_id: string | null;
+  activation_id: string | null;
+};
+
+type DistrictLite = {
+  id: string;
+  name: string;
+};
+
+type ActivationLite = {
+  id: string;
+  name: string;
+};
+
+type ClickLite = {
+  created_at: string;
+  device_type: string | null;
+  referrer: string | null;
+  is_bot?: boolean;
+};
+
+function toDateKeyUTC(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function isoAtUTCStartOfDay(daysFromToday: number): string {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() + daysFromToday);
+  return d.toISOString();
+}
+
 export default async function AgentDetailPage({ params }: { params: { id: string } }) {
   const supa = createServerComponentClient({ cookies });
+
   const {
     data: { user },
   } = await supa.auth.getUser();
@@ -22,10 +72,32 @@ export default async function AgentDetailPage({ params }: { params: { id: string
     );
   }
 
+  // Get organization_id for current user
+  const { data: profile } = await supa
+    .from("profiles")
+    .select("organization_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const orgId = (profile as any)?.organization_id as string | undefined;
+
+  if (!orgId) {
+    return (
+      <div className="space-y-6">
+        <PageHeader icon="users" title="Agent" />
+        <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-600">
+          No organization found. Create your organization in Settings first.
+        </div>
+      </div>
+    );
+  }
+
+  // Load agent restricted to organization
   const { data: agent } = await supa
     .from("agents")
-    .select("id, name, public_stats_token")
+    .select("id, name, organization_id")
     .eq("id", params.id)
+    .eq("organization_id", orgId)
     .maybeSingle();
 
   if (!agent) {
@@ -36,81 +108,165 @@ export default async function AgentDetailPage({ params }: { params: { id: string
           Agent not found.
         </div>
         <div>
-          <Link href="/app/agents" className="btn-press rounded border px-3 py-1.5 text-sm hover:bg-gray-50">
+          <a href="/app/agents" className="btn-press rounded border px-3 py-1.5 text-sm hover:bg-gray-50">
             Back to Agents
-          </Link>
+          </a>
         </div>
       </div>
     );
   }
 
+  // Latest active tracked link for this agent
   const { data: link } = await supa
     .from("tracked_links")
-    .select("slug")
+    .select("id, slug, activation_id, zone_id")
     .eq("agent_id", agent.id)
     .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim();
-  const short = link?.slug ? `/l/${link.slug}` : "";
-  const absolute = link?.slug ? (baseUrl ? `${baseUrl}${short}` : short) : "";
+  let zone: ZoneLite | null = null;
+  let district: DistrictLite | null = null;
+  let activation: ActivationLite | null = null;
+
+  if (link?.zone_id) {
+    const { data: z } = await supa
+      .from("zones")
+      .select("id, name, district_id, activation_id")
+      .eq("id", link.zone_id)
+      .maybeSingle();
+    zone = (z as ZoneLite) || null;
+
+    if (zone?.district_id) {
+      const { data: d } = await supa
+        .from("districts")
+        .select("id, name")
+        .eq("id", zone.district_id)
+        .maybeSingle();
+      district = (d as DistrictLite) || null;
+    }
+  }
+
+  const activationId = (link?.activation_id as string | null) || (zone?.activation_id as string | null) || null;
+  if (activationId) {
+    const { data: a } = await supa
+      .from("activations")
+      .select("id, name")
+      .eq("id", activationId)
+      .maybeSingle();
+    activation = (a as ActivationLite) || null;
+  }
+
+  const parts: string[] = [];
+  if (activation?.name) parts.push(activation.name);
+  const districtZone = [district?.name, zone?.name].filter(Boolean).join(" / ");
+  if (districtZone) parts.push(districtZone);
+  const desc = parts.length ? parts.join(" – ") : "—";
+
+  // Metrics: last 7 days (valid clicks = !is_bot)
+  // Window: from UTC start (today - 6) to UTC start (tomorrow)
+  const startISO = isoAtUTCStartOfDay(-6);
+  const tomorrowISO = isoAtUTCStartOfDay(1);
+
+  const { count: weekValidCount } = await supa
+    .from("clicks")
+    .select("id", { count: "exact", head: true })
+    .eq("agent_id", agent.id)
+    .eq("is_bot", false)
+    .gte("created_at", startISO)
+    .lt("created_at", tomorrowISO);
+
+  // Daily series for last 7 days (valid clicks)
+  const { data: dailyRows } = await supa
+    .from("clicks")
+    .select("created_at")
+    .eq("agent_id", agent.id)
+    .eq("is_bot", false)
+    .gte("created_at", startISO)
+    .lt("created_at", tomorrowISO);
+
+  const dailyCountsMap = new Map<string, number>();
+  if (Array.isArray(dailyRows)) {
+    for (const r of dailyRows as ClickLite[]) {
+      const dt = new Date(r.created_at);
+      const key = toDateKeyUTC(dt);
+      dailyCountsMap.set(key, (dailyCountsMap.get(key) || 0) + 1);
+    }
+  }
+
+  const last7Keys: string[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(isoAtUTCStartOfDay(-i));
+    last7Keys.push(toDateKeyUTC(d));
+  }
+  const dailySeries = last7Keys.map((k) => ({ date: k, count: dailyCountsMap.get(k) || 0 }));
+
+  // Recent clicks (limit 20; show all clicks)
+  const { data: recentClicksData } = await supa
+    .from("clicks")
+    .select("created_at, device_type, referrer")
+    .eq("agent_id", agent.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  const recentClicks = (Array.isArray(recentClicksData) ? recentClicksData : []) as ClickLite[];
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="users" title={agent.name || "Agent"} subtitle="View agent details and performance" />
+      <PageHeader icon="users" title={agent.name || "Agent"} subtitle={desc} />
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <div className="text-sm text-gray-600">Agent ID</div>
-        <div className="font-mono text-sm">{agent.id}</div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-6">
+          <div className="text-sm text-gray-600">This week (last 7 days) – valid clicks</div>
+          <div className="mt-2 text-3xl font-semibold">{weekValidCount ?? 0}</div>
+        </div>
 
-        <div className="mt-4 text-sm text-gray-600">Public Stats</div>
-        {agent.public_stats_token ? (
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/a/${agent.public_stats_token}`}
-              target="_blank"
-              className="underline underline-offset-2 text-sm"
-            >
-              Open public page
-            </Link>
+        <div className="rounded-xl border border-gray-200 bg-white p-6">
+          <div className="text-sm text-gray-600">Last 7 days (daily)</div>
+          <div className="mt-3 space-y-2">
+            {dailySeries.map((d) => (
+              <div key={d.date} className="flex items-center justify-between text-sm">
+                <span className="font-mono text-gray-700">{d.date}</span>
+                <span className="font-medium">{d.count}</span>
+              </div>
+            ))}
           </div>
-        ) : (
-          <div className="text-sm text-gray-500">No public stats token</div>
-        )}
-
-        <div className="mt-4 text-sm text-gray-600">Latest active link</div>
-        {link?.slug ? (
-          <div className="flex items-center gap-2">
-            <Link href={short} target="_blank" className="underline underline-offset-2 text-sm">
-              {short}
-            </Link>
-            <CopyButton text={absolute} />
-            <Link
-              href={`/app/agents/${agent.id}/edit`}
-              className="btn-press rounded border px-3 py-1.5 text-xs hover:bg-gray-50 ml-auto"
-            >
-              Manage
-            </Link>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500">No link</div>
-            <Link
-              href={`/app/agents/${agent.id}/edit`}
-              className="btn-press rounded border px-3 py-1.5 text-xs hover:bg-gray-50"
-            >
-              Manage
-            </Link>
-          </div>
-        )}
+        </div>
       </div>
 
-      <div>
-        <Link href="/app/agents" className="btn-press rounded border px-3 py-1.5 text-sm hover:bg-gray-50">
-          Back to Agents
-        </Link>
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="border-b bg-gray-50 px-4 py-3 text-sm font-medium">Recent clicks</div>
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-left">
+            <tr>
+              <th className="px-4 py-3 font-medium">Timestamp (UTC)</th>
+              <th className="px-4 py-3 font-medium">Device</th>
+              <th className="px-4 py-3 font-medium">Referrer</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentClicks.map((c, idx) => {
+              const ts = c.created_at ? new Date(c.created_at).toISOString().replace("T", " ").slice(0, 16) : "";
+              const device = c.device_type || "unknown";
+              const ref = c.referrer || "Direct";
+              return (
+                <tr key={`${ts}-${idx}`} className="border-t">
+                  <td className="px-4 py-3 font-mono">{ts}</td>
+                  <td className="px-4 py-3">{device}</td>
+                  <td className="px-4 py-3">{ref}</td>
+                </tr>
+              );
+            })}
+            {recentClicks.length === 0 ? (
+              <tr>
+                <td className="px-4 py-10 text-center text-gray-600" colSpan={3}>
+                  No recent clicks
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
       </div>
     </div>
   );
