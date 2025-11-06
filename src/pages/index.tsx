@@ -8,7 +8,7 @@ import { StepCard } from "@/components/landing/StepCard";
 import { FeatureTabs } from "@/components/landing/FeatureTabs";
 import React, { useEffect } from "react";
 
-const YEAR = 2025;
+const YEAR = new Date().getFullYear();
 
 function RevealMount() {
   useEffect(() => {
@@ -26,8 +26,7 @@ export default function Home() {
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_70%_10%,#EEF2FF_0%,transparent_60%)]" />
         <div
-          className="absolute inset-x-0 top-[-35%] h-[420px] bg-[linear-gradient(90deg,#E9D5FF,#DBEAFE,#F0FDF4)] bg-[length:200%_200%] blur-3xl opacity-40"
-          style={{ animation: "gradientMove 14s ease-in-out infinite" }}
+          className="absolute inset-x-0 top-[-35%] h-[420px] bg-[linear-gradient(90deg,#E9D5FF,#DBEAFE,#F0FDF4)] gradient-move blur-3xl opacity-40"
         />
       </div>
 
@@ -189,4 +188,3 @@ export default function Home() {
     </main>
   );
 }
-  
