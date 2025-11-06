@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layouts/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
-import { GlobalFilters } from "@/components/dashboard/GlobalFilters";
+import { Topbar } from "@/components/dashboard/Topbar";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
 import { TopPerformersCard } from "@/components/dashboard/TopPerformersCard";
@@ -215,7 +215,7 @@ export default function OverviewPage({ initialActivationsCount, organizationId }
           </p>
         </div>
 
-        <GlobalFilters />
+        <Topbar />
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
