@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
 import { HeroChip, FeatureCard, StepCard, KPI } from "@/components/landing/LandingSections";
 import useReveal from "@/hooks/useReveal";
 import { CountUp } from "@/components/CountUp";
+import { Pin } from "@/components/Pin";
 
 export default function Home() {
   useReveal();
@@ -88,11 +88,11 @@ export default function Home() {
           <div className="relative">
             <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
               <div className="h-72 w-full bg-[radial-gradient(circle_at_30%_30%,#F3F4F6,transparent_60%),radial-gradient(circle_at_70%_60%,#EEF2FF,transparent_55%)]" />
-              <MapPin aria-hidden className="absolute left-6 top-8 anim-float" style={{ animationDelay: "0s" }} />
-              <MapPin aria-hidden className="absolute right-8 top-10 anim-float" style={{ animationDelay: "0.2s" }} />
-              <MapPin aria-hidden className="absolute left-1/3 top-1/2 anim-float" style={{ animationDelay: "0.4s" }} />
-              <MapPin aria-hidden className="absolute right-10 bottom-12 anim-float" style={{ animationDelay: "0.6s" }} />
-              <MapPin aria-hidden className="absolute left-10 bottom-8 anim-float" style={{ animationDelay: "0.8s" }} />
+              <Pin aria-hidden className="absolute left-6 top-8" style={{ animationDelay: "0s" }} />
+              <Pin aria-hidden className="absolute right-8 top-10" style={{ animationDelay: "0.2s" }} />
+              <Pin aria-hidden className="absolute left-1/3 top-1/2" style={{ animationDelay: "0.4s" }} />
+              <Pin aria-hidden className="absolute right-10 bottom-12" style={{ animationDelay: "0.6s" }} />
+              <Pin aria-hidden className="absolute left-10 bottom-8" style={{ animationDelay: "0.8s" }} />
             </div>
             <div className="absolute -bottom-6 left-6 w-64 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
               <p className="text-xs text-gray-500">This week</p>
