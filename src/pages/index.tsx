@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { HeroChip, FeatureCard, StepCard, KPI } from "@/components/landing/LandingSections";
 import useReveal from "@/hooks/useReveal";
+import { CountUp } from "@/components/CountUp";
 
 export default function Home() {
   useReveal();
@@ -95,7 +96,7 @@ export default function Home() {
             </div>
             <div className="absolute -bottom-6 left-6 w-64 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
               <p className="text-xs text-gray-500">This week</p>
-              <p className="mt-1 text-2xl font-bold">2,105 valid clicks</p>
+              <p className="mt-1 text-2xl font-bold"><CountUp to={2105} /> valid clicks</p>
               <p className="text-xs text-emerald-600">+8% vs last week</p>
             </div>
           </div>
