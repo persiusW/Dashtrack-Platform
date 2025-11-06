@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { RenameDialog } from "@/components/RenameDialog";
 import { useToast } from "@/hooks/use-toast";
 import EmptyState from "@/components/ui/EmptyState";
+import { CreateActivationDialog } from "@/components/forms/CreateActivationDialog";
 
 type Activation = {
   id: string;
@@ -171,6 +172,17 @@ export default function ActivationsPage({ organizationId, activations }: Activat
             desc="Create your first activation to start adding districts, zones and agents."
             actions={[{ label: "Create activation", primary: true, onClick: () => setCreateOpen(true) }]}
           />
+          <div className="mt-6 flex justify-center">
+            <CreateActivationDialog
+              onCreated={(id) => {
+                if (id) {
+                  window.location.assign(`/app/activations/${id}`);
+                } else {
+                  window.location.reload();
+                }
+              }}
+            />
+          </div>
         </div>
         <GuidedCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} />
       </AppLayout>
@@ -180,9 +192,17 @@ export default function ActivationsPage({ organizationId, activations }: Activat
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Activations</h1>
-          <CreateButton />
+          <CreateActivationDialog
+            onCreated={(id) => {
+              if (id) {
+                window.location.assign(`/app/activations/${id}`);
+              } else {
+                window.location.reload();
+              }
+            }}
+          />
         </div>
         <div className="space-y-3">
           {items.map((a) => {
