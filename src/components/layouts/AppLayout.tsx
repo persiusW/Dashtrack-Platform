@@ -1,11 +1,12 @@
-import { ReactNode, useState } from "react";
+
+    import { ReactNode, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import {
   LayoutDashboard,
   FolderKanban,
-  MapPin,
+  MapPin as MapPinIcon,
   Users,
   Link2,
   Settings,
@@ -19,12 +20,14 @@ import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Toaster } from "@/components/ui/toaster";
+import { SidebarSimple } from "@/components/SidebarSimple";
 
 interface AppLayoutProps {
   children: ReactNode;
+  variant?: "full" | "simple";
 }
 
-export function AppLayout({ children }: AppLayoutProps) {
+export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
   const { user, profile, signOut } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -32,8 +35,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigation = [
     { name: "Overview", href: "/app/overview", icon: LayoutDashboard },
     { name: "Activations", href: "/app/activations", icon: FolderKanban },
-    { name: "Districts", href: "/app/districts", icon: MapPin },
-    { name: "Zones", href: "/app/zones", icon: MapPin },
+    { name: "Districts", href: "/app/districts", icon: MapPinIcon },
+    { name: "Zones", href: "/app/zones", icon: MapPinIcon },
     { name: "Agents", href: "/app/agents", icon: Users },
     { name: "Links", href: "/app/links", icon: Link2 },
   ];
@@ -59,6 +62,38 @@ export function AppLayout({ children }: AppLayoutProps) {
         return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
     }
   };
+
+  if (variant === "simple") {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+        <SidebarSimple current={router.pathname} />
+        <div className="flex-1 flex flex-col">
+          <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between px-4 py-3">
+              <Link href="/app/overview" className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg" />
+                <span className="text-xl font-bold">DashTrack</span>
+              </Link>
+              <div className="flex items-center space-x-2">
+                <ThemeSwitch />
+                <Link href="/app/settings">
+                  <Button variant="ghost" size="icon">
+                    <Settings className="h-5 w-5" />
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={signOut} className="hidden sm:inline-flex">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
+            </div>
+          </header>
+          <main className="p-6">{children}</main>
+          <Toaster />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -133,7 +168,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3 mb-3">
               <Avatar>
-                <AvatarFallback>{user?.email?.[0].toUpperCase()}</AvatarFallback>
+                <AvatarFallback>{user?.email?.[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -191,3 +226,4 @@ export function AppLayout({ children }: AppLayoutProps) {
     </div>
   );
 }
+  
