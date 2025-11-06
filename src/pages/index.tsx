@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { HeroChip, FeatureCard, StepCard, KPI } from "@/components/landing/LandingSections";
 import useReveal from "@/hooks/useReveal";
-import { CountUp } from "@/components/CountUp";
-import { Pin } from "@/components/Pin";
+import CountUp from "@/components/ui/CountUp";
+import Pin from "@/components/ui/Pin";
 
 export default function Home() {
   useReveal();
