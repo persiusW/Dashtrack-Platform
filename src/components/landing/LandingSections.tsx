@@ -80,7 +80,7 @@ export function StepCard({ step, title, children }: StepCardProps) {
 }
 
 export interface KPIProps {
-  value: string;
+  value: ReactNode;
   label: string;
 }
 

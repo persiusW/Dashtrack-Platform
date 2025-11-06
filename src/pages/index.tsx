@@ -225,13 +225,13 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-4">
           <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-3">
             <div className="reveal" style={{ animationDelay: "0ms" }}>
-              <KPI value="12k+" label="Agent links generated" />
+              <KPI value={<CountUp to={12000} />} label="Agent links generated" />
             </div>
             <div className="reveal" style={{ animationDelay: "75ms" }}>
               <KPI value="98.7%" label="Bot-filter accuracy" />
             </div>
             <div className="reveal" style={{ animationDelay: "150ms" }}>
-              <KPI value="&gt;60%" label="Faster payout attribution" />
+              <KPI value=">60%" label="Faster payout attribution" />
             </div>
           </div>
 
