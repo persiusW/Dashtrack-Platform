@@ -1,8 +1,8 @@
-
 import PageHeader from "@/components/dashboard/PageHeader";
 import CopyButton from "@/components/ui/CopyButton";
 import { cookies } from "next/headers";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import Link from "next/link";
 
 type Agent = {
   id: string;
@@ -263,18 +263,18 @@ export default async function AgentsPage() {
                           Open
                         </a>
                       ) : null}
-                      <a
+                      <Link
                         className="btn-press rounded border px-3 py-1.5 text-xs hover:bg-gray-50"
                         href={`/app/agents/${r.id}`}
                       >
                         View stats
-                      </a>
-                      <a
+                      </Link>
+                      <Link
                         className="btn-press rounded border px-3 py-1.5 text-xs hover:bg-gray-50"
                         href={`/app/agents/${r.id}/edit`}
                       >
                         Manage
-                      </a>
+                      </Link>
                     </div>
                   </td>
                 </tr>
@@ -293,4 +293,3 @@ export default async function AgentsPage() {
     </div>
   );
 }
-  
