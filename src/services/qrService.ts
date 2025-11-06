@@ -17,7 +17,7 @@ export const qrService = {
     
     // Generate QR code URL
     const appUrl = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || "https://dashtrack.com");
-    const qrUrl = `${appUrl}/r/${slug}`;
+    const qrUrl = `${appUrl}/l/${slug}`;
     
     // Use a QR code generation API (we'll use qrcode library)
     const QRCode = (await import("qrcode")).default;

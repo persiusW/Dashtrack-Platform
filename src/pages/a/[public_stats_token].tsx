@@ -130,7 +130,7 @@ export default function PublicAgentStatsPage() {
 
   const handleCopyLink = () => {
     if (agentLink) {
-      const link = `${window.location.origin}/r/${agentLink.slug}`;
+      const link = `${window.location.origin}/l/${agentLink.slug}`;
       navigator.clipboard.writeText(link);
     }
   };
@@ -165,7 +165,7 @@ export default function PublicAgentStatsPage() {
     (d) => d.date === new Date().toISOString().split("T")[0]
   )?.clicks || 0;
 
-  const uniqueLink = agentLink ? `${window.location.origin}/r/${agentLink.slug}` : "";
+  const uniqueLink = agentLink ? `${window.location.origin}/l/${agentLink.slug}` : "";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">

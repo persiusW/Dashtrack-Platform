@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
@@ -30,7 +29,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ slug: s
 
   const { data: act } = await supa
     .from("activations")
-    .select("default_landing_url, redirect_android_url, redirect_ios_url")
+    .select("default_redirect_url, redirect_android_url, redirect_ios_url")
     .eq("id", (link as any).activation_id)
     .maybeSingle();
 
@@ -51,9 +50,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ slug: s
     (isAndroid && (act as any)?.redirect_android_url) ||
     (isIOS && (act as any)?.redirect_ios_url) ||
     linkRedirect ||
-    (act as any)?.default_landing_url ||
+    (act as any)?.default_redirect_url ||
     "/";
 
   return NextResponse.redirect(dest, { status: 302 });
 }
-  

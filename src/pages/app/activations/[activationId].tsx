@@ -297,7 +297,7 @@ export default function ActivationDetailsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => copyToClipboard(`${window.location.origin}/r/${link.slug}`)}
+                              onClick={() => copyToClipboard(`${window.location.origin}/l/${link.slug}`)}
                             >
                               <Copy className="h-4 w-4" />
                             </Button>

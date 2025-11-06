@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import QuickCreateDialog from "@/components/QuickCreateDialog";
 import Link from "next/link";
 import GuidedCreateDialog from "@/components/GuidedCreateDialog";
+import { CreateActivationDialog } from "@/components/forms/CreateActivationDialog";
 
 type OverviewProps = {
   initialActivationsCount: number;
@@ -207,11 +208,22 @@ export default function OverviewPage({ initialActivationsCount, organizationId }
   return (
     <AppLayout variant="simple">
       <div className="container mx-auto p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Overview Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Monitor your campaign performance and key metrics
-          </p>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Overview Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Monitor your campaign performance and key metrics
+            </p>
+          </div>
+          <CreateActivationDialog
+            onCreated={(id) => {
+              if (id) {
+                window.location.assign(`/app/activations/${id}`);
+              } else {
+                window.location.reload();
+              }
+            }}
+          />
         </div>
 
         {/* Topbar is rendered by AppLayout (simple variant) */}

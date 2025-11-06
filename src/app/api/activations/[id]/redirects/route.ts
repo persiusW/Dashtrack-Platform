@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
+
   const supa = createRouteHandlerClient({ cookies });
   const {
     data: { user },
@@ -13,7 +15,6 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
   const body = await req.json().catch(() => ({}));
   const { default_redirect_url, redirect_android_url, redirect_ios_url } = body || {};
-  const { id } = await context.params;
 
   const { error } = await supa
     .from("activations")
