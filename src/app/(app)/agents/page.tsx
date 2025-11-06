@@ -1,4 +1,3 @@
-
 import PageHeader from "@/components/dashboard/PageHeader";
 import { cookies } from "next/headers";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
