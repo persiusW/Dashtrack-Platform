@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const NAV = [
+const NAV: { href: string; label: string }[] = [
   { href: "/app/overview", label: "Overview" },
   { href: "/app/activations", label: "Activations" },
   { href: "/app/districts", label: "Districts" },
@@ -10,36 +10,24 @@ const NAV = [
   { href: "/app/agents", label: "Agents" },
   { href: "/app/links", label: "Links" },
   { href: "/app/settings", label: "Settings" },
-] as const;
+];
 
-export interface SidebarSimpleProps {
-  current?: string;
-}
-
-export function SidebarSimple({ current }: SidebarSimpleProps) {
+export function Sidebar({ current }: { current?: string }) {
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
-    try {
-      const v = localStorage.getItem("sidebar_open");
-      if (v !== null) setOpen(v === "1");
-    } catch {
-      // ignore
-    }
+    const v = typeof window !== "undefined" ? localStorage.getItem("sidebar_open") : null;
+    if (v !== null) setOpen(v === "1");
   }, []);
 
   useEffect(() => {
-    try {
+    if (typeof window !== "undefined") {
       localStorage.setItem("sidebar_open", open ? "1" : "0");
-    } catch {
-      // ignore
     }
   }, [open]);
 
   return (
-    <aside
-      className={`border-r border-gray-100 bg-white transition-all duration-200 ${open ? "w-60" : "w-16"} overflow-hidden`}
-    >
+    <aside className={`border-r border-gray-100 bg-white transition-all duration-200 ${open ? "w-60" : "w-16"} overflow-hidden`}>
       <div className="flex items-center justify-between px-3 py-3">
         <Link href="/app/overview" className="flex items-center gap-2">
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white font-bold">D</span>
@@ -48,15 +36,16 @@ export function SidebarSimple({ current }: SidebarSimpleProps) {
         <button
           onClick={() => setOpen(!open)}
           className="btn-press rounded border px-2 py-1 text-xs"
-          aria-label="Toggle sidebar"
-          title="Toggle sidebar"
+          aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
+          aria-pressed={open ? "true" : "false"}
+          title={open ? "Collapse sidebar" : "Expand sidebar"}
         >
           {open ? "«" : "»"}
         </button>
       </div>
-      <nav className="mt-2">
+      <nav className="mt-2" aria-label="Main navigation">
         {NAV.map((n) => {
-          const active = !!current && n.href.startsWith(current);
+          const active = current ? current.startsWith(n.href) : false;
           return (
             <Link
               key={n.href}

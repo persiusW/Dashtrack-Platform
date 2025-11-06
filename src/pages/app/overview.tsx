@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layouts/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
-import { Topbar } from "@/components/dashboard/Topbar";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { TimeSeriesChart } from "@/components/dashboard/TimeSeriesChart";
 import { TopPerformersCard } from "@/components/dashboard/TopPerformersCard";
@@ -151,7 +150,7 @@ export default function OverviewPage({ initialActivationsCount, organizationId }
 
   if (authLoading) {
     return (
-      <AppLayout>
+      <AppLayout variant="simple">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
@@ -164,7 +163,7 @@ export default function OverviewPage({ initialActivationsCount, organizationId }
 
   if (!organizationId) {
     return (
-      <AppLayout>
+      <AppLayout variant="simple">
         <div className="container mx-auto p-6">
           <div className="mx-auto max-w-2xl text-center bg-white dark:bg-gray-800 border rounded-xl p-10">
             <h1 className="text-2xl font-bold">Set up your organization</h1>
@@ -184,7 +183,7 @@ export default function OverviewPage({ initialActivationsCount, organizationId }
 
   if (initialActivationsCount === 0) {
     return (
-      <AppLayout>
+      <AppLayout variant="simple">
         <div className="container mx-auto p-6">
           <div className="mx-auto max-w-2xl text-center bg-white dark:bg-gray-800 border rounded-xl p-10">
             <h1 className="text-2xl font-bold">Create your first activation</h1>
@@ -206,7 +205,7 @@ export default function OverviewPage({ initialActivationsCount, organizationId }
   }
 
   return (
-    <AppLayout>
+    <AppLayout variant="simple">
       <div className="container mx-auto p-6 space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Overview Dashboard</h1>
@@ -215,7 +214,7 @@ export default function OverviewPage({ initialActivationsCount, organizationId }
           </p>
         </div>
 
-        <Topbar />
+        {/* Topbar is rendered by AppLayout (simple variant) */}
 
         {loading ? (
           <div className="flex items-center justify-center py-12">

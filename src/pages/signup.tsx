@@ -84,7 +84,7 @@ export default function SignupPage() {
       <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white border rounded-2xl p-6 space-y-4 shadow-sm">
         <div>
           <h1 className="text-2xl font-semibold">Create account</h1>
-          <p className="text-sm text-gray-600 mt-1">Get started with DasHttp Track</p>
+          <p className="text-sm text-gray-600 mt-1">Get started with DashTrack</p>
         </div>
 
         {error && (

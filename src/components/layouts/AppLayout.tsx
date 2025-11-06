@@ -1,5 +1,4 @@
-
-    import { ReactNode, useState } from "react";
+import { ReactNode, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -20,7 +19,8 @@ import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Toaster } from "@/components/ui/toaster";
-import { SidebarSimple } from "@/components/SidebarSimple";
+import { Sidebar } from "@/components/dashboard/Sidebar";
+import { Topbar } from "@/components/dashboard/Topbar";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -66,7 +66,7 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
   if (variant === "simple") {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-        <SidebarSimple current={router.pathname} />
+        <Sidebar current={router.pathname} />
         <div className="flex-1 flex flex-col">
           <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between px-4 py-3">
@@ -88,6 +88,7 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
               </div>
             </div>
           </header>
+          <Topbar />
           <main className="p-6">{children}</main>
           <Toaster />
         </div>
@@ -226,4 +227,3 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
     </div>
   );
 }
-  
