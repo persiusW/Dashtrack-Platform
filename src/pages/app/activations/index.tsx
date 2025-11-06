@@ -8,6 +8,7 @@ import { RowActions } from "@/components/RowActions";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { RenameDialog } from "@/components/RenameDialog";
 import { useToast } from "@/hooks/use-toast";
+import EmptyState from "@/components/ui/EmptyState";
 
 type Activation = {
   id: string;
@@ -82,6 +83,7 @@ export default function ActivationsPage({ organizationId, activations }: Activat
   const [renaming, setRenaming] = useState<Pick<Activation, "id" | "name"> | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Pick<Activation, "id" | "name"> | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const handleStartRename = useCallback((id: string, name: string) => {
     setRenaming({ id, name });
@@ -163,7 +165,14 @@ export default function ActivationsPage({ organizationId, activations }: Activat
   if (!items || items.length === 0) {
     return (
       <AppLayout>
-        <EmptyCreateActivation />
+        <div className="max-w-xl mx-auto mt-16">
+          <EmptyState
+            title="No activations yet"
+            desc="Create your first activation to start adding districts, zones and agents."
+            actions={[{ label: "Create activation", primary: true, onClick: () => setCreateOpen(true) }]}
+          />
+        </div>
+        <GuidedCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} />
       </AppLayout>
     );
   }
@@ -238,19 +247,5 @@ function CreateButton() {
       </button>
       <GuidedCreateDialog open={open} onClose={() => setOpen(false)} />
     </>
-  );
-}
-
-function EmptyCreateActivation() {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="max-w-xl mx-auto text-center mt-16">
-      <h2 className="text-2xl font-semibold">Create your first activation</h2>
-      <p className="mt-2 text-gray-600">You have no activations yet.</p>
-      <button className="mt-6 bg-black text-white px-4 py-2 rounded" onClick={() => setOpen(true)}>
-        Create Activation
-      </button>
-      <GuidedCreateDialog open={open} onClose={() => setOpen(false)} />
-    </div>
   );
 }
