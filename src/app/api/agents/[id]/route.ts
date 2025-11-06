@@ -13,11 +13,17 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   const body = await req.json().catch(() => ({} as any));
   const patch: Record<string, unknown> = {};
   if (typeof body.name === "string") patch.name = body.name.trim();
+  if (typeof body.notes === "string") patch.notes = body.notes.trim();
   if (typeof body.phone === "string") patch.phone = body.phone.trim();
   if (typeof body.email === "string") patch.email = body.email.trim();
   if (typeof body.active === "boolean") patch.active = body.active;
+  if (typeof body.zone_id === "string") patch.zone_id = body.zone_id;
 
-  const { error } = await supa.from("agents").update(patch).eq("id", id);
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ ok: false, error: "No changes" }, { status: 400 });
+  }
+
+  const { error } = await supa.from("agents").update(patch).eq("id", id).eq("organization_id", orgId);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

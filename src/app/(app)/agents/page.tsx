@@ -1,20 +1,24 @@
+
 import PageHeader from "@/components/dashboard/PageHeader";
-import { CopyButton } from "@/components/CopyButton";
 import { cookies } from "next/headers";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import Link from "next/link";
+import AgentsClient from "./AgentsClient";
 
 type Agent = {
   id: string;
   name: string;
+  notes?: string | null;
   created_at: string | null;
 };
 
 type TrackedLinkLite = {
+  id: string;
   agent_id: string | null;
   slug: string;
   activation_id: string | null;
   zone_id: string | null;
+  redirect_url: string | null;
+  created_at?: string | null;
 };
 
 type ZoneLite = {
@@ -34,18 +38,23 @@ type ActivationLite = {
   name: string;
 };
 
-type AgentRow = {
+export interface AgentListRow {
   id: string;
   name: string;
-  desc: string;
+  notes: string;
+  activationName: string;
+  districtName: string;
+  zoneName: string;
+  linkId?: string;
   slug?: string;
-};
+  shortUrl?: string;
+  absoluteUrl?: string;
+  redirectUrl?: string;
+}
 
 export default async function AgentsPage() {
   const supa = createServerComponentClient({ cookies });
-  const {
-    data: { user },
-  } = await supa.auth.getUser();
+  const { data: { user } } = await supa.auth.getUser();
 
   if (!user) {
     return (
@@ -77,13 +86,14 @@ export default async function AgentsPage() {
     );
   }
 
+  // Load agents for this org
   const { data: agentsData } = await supa
     .from("agents")
-    .select("id, name, created_at")
+    .select("id, name, notes, created_at")
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
-  const agents: Agent[] = (Array.isArray(agentsData) ? agentsData : []) as Agent[];
+  const agents: Agent[] = Array.isArray(agentsData) ? (agentsData as Agent[]) : [];
 
   if (!agents.length) {
     return (
@@ -98,26 +108,30 @@ export default async function AgentsPage() {
 
   const agentIds = agents.map((a) => a.id);
 
-  // Fetch latest active tracked link per agent (ordered by created_at desc)
+  // Latest active link per agent (ordered by created_at desc)
   const linksByAgent = new Map<string, TrackedLinkLite>();
   if (agentIds.length) {
     const { data: linksData } = await supa
       .from("tracked_links")
-      .select("agent_id, slug, activation_id, zone_id, created_at")
+      .select("id, agent_id, slug, activation_id, zone_id, redirect_url, created_at, is_active")
       .in("agent_id", agentIds)
+      .eq("organization_id", orgId)
       .eq("is_active", true)
       .order("created_at", { ascending: false });
 
-    const linksArr = (Array.isArray(linksData) ? linksData : []) as Array<TrackedLinkLite & { created_at?: string | null }>;
+    const linksArr = (Array.isArray(linksData) ? linksData : []) as Array<TrackedLinkLite & { is_active?: boolean }>;
     for (const row of linksArr) {
       const aid = row.agent_id || "";
       if (!aid) continue;
       if (!linksByAgent.has(aid)) {
         linksByAgent.set(aid, {
+          id: row.id,
           agent_id: row.agent_id,
           slug: row.slug,
           activation_id: row.activation_id,
           zone_id: row.zone_id,
+          redirect_url: row.redirect_url ?? null,
+          created_at: row.created_at,
         });
       }
     }
@@ -187,8 +201,14 @@ export default async function AgentsPage() {
     }
   }
 
-  // Compose rows
-  const rows: AgentRow[] = agents.map((a) => {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+  const toShort = (slug: string) => `/r/${slug}`;
+  const toAbsolute = (slug: string) => {
+    const short = toShort(slug);
+    return baseUrl ? `${baseUrl}${short}` : short;
+    };
+
+  const rows = agents.map((a) => {
     const link = linksByAgent.get(a.id);
     const zone = link?.zone_id ? zonesById.get(link.zone_id) : undefined;
     const district = zone?.district_id ? districtsById.get(zone.district_id) : undefined;
@@ -197,99 +217,34 @@ export default async function AgentsPage() {
     const activationId = (link?.activation_id as string | undefined) || (zone?.activation_id as string | undefined);
     const activation = activationId ? activationsById.get(activationId) : undefined;
 
-    const parts: string[] = [];
-    if (activation?.name) parts.push(activation.name);
-    const districtZone =
-      [district?.name, zone?.name].filter(Boolean).join(" / ") || "";
-    if (districtZone) parts.push(districtZone);
+    const activationName = activation?.name || "";
+    const districtName = district?.name || "";
+    const zoneName = zone?.name || "";
 
-    const desc = parts.length ? parts.join(" – ") : "—";
+    const slug = link?.slug || undefined;
+    const shortUrl = slug ? toShort(slug) : undefined;
+    const absoluteUrl = slug ? toAbsolute(slug) : undefined;
+    const redirectUrl = link?.redirect_url ?? undefined;
 
     return {
       id: a.id,
       name: a.name,
-      slug: link?.slug || undefined,
-      desc,
-    };
+      notes: a.notes ?? "",
+      activationName,
+      districtName,
+      zoneName,
+      linkId: link?.id,
+      slug,
+      shortUrl,
+      absoluteUrl,
+      redirectUrl,
+    } as AgentListRow;
   });
-
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim();
-  const toShort = (slug: string) => `/r/${slug}`;
-  const toAbsolute = (slug: string) => {
-    const short = toShort(slug);
-    return baseUrl ? `${baseUrl}${short}` : short;
-  };
 
   return (
     <div className="space-y-6">
       <PageHeader icon="users" title="Agents" subtitle="Manage field agents and their unique links" />
-
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-left">
-            <tr>
-              <th className="px-4 py-3 font-medium">Agent</th>
-              <th className="px-4 py-3 font-medium">Description</th>
-              <th className="px-4 py-3 font-medium">Link</th>
-              <th className="px-4 py-3 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => {
-              const short = r.slug ? toShort(r.slug) : "";
-              const abs = r.slug ? toAbsolute(r.slug) : "";
-              return (
-                <tr key={r.id} className="border-t">
-                  <td className="px-4 py-3">{r.name}</td>
-                  <td className="px-4 py-3 text-gray-600">{r.desc}</td>
-                  <td className="px-4 py-3">
-                    {r.slug ? (
-                      <a className="underline underline-offset-2" href={short} target="_blank">
-                        {short}
-                      </a>
-                    ) : (
-                      <span className="text-gray-400">No link</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {r.slug ? <CopyButton text={abs} /> : null}
-                      {r.slug ? (
-                        <a
-                          className="btn-press rounded border px-3 py-1.5 text-xs hover:bg-gray-50"
-                          href={short}
-                          target="_blank"
-                        >
-                          Open
-                        </a>
-                      ) : null}
-                      <Link
-                        className="btn-press rounded border px-3 py-1.5 text-xs hover:bg-gray-50"
-                        href={`/agents/${r.id}`}
-                      >
-                        View stats
-                      </Link>
-                      <Link
-                        className="btn-press rounded border px-3 py-1.5 text-xs hover:bg-gray-50"
-                        href={`/agents/${r.id}/edit`}
-                      >
-                        Manage
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {rows.length === 0 ? (
-              <tr>
-                <td className="px-4 py-10 text-center text-gray-600" colSpan={4}>
-                  No agents yet
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+      <AgentsClient rows={rows} />
     </div>
   );
 }

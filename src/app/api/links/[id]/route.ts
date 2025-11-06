@@ -22,8 +22,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
   if (typeof body.description === "string") patch.description = body.description.trim();
   if (typeof body.redirect_url === "string") {
-    patch.destination_strategy = "single";
-    patch.single_url = body.redirect_url.trim();
+    patch.redirect_url = body.redirect_url.trim();
   }
 
   if (Object.keys(patch).length === 0) {
@@ -48,7 +47,7 @@ export async function DELETE(_: NextRequest, context: { params: Promise<{ id: st
     .eq("id", id)
     .maybeSingle();
 
-  if (!link || link.organization_id !== orgId) {
+  if (!link || (link as any).organization_id !== orgId) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }
 
