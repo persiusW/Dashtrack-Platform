@@ -1,4 +1,4 @@
-
+"use client";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -124,4 +124,3 @@ export function CreateActivationDialog({ triggerVariant = "default", onCreated }
     </Dialog>
   );
 }
-  

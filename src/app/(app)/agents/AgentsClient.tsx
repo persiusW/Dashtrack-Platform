@@ -178,8 +178,17 @@ export default function AgentsClient({ rows }: { rows: AgentListRow[] }) {
             onSubmit={async (e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget as HTMLFormElement);
-              const zone_id = String(f.get("zone_id") || "");
-              await patchAgent(reassigning.id, { zone_id });
+              const zone_id = String(f.get("zone_id") || "").trim();
+              if (!zone_id) return;
+              const res = await fetch(`/api/agents/${reassigning.id}/zone`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ zone_id }),
+              });
+              if (!res.ok) {
+                alert("Failed to reassign zone");
+                return;
+              }
               setReassigning(null);
               router.refresh();
             }}
