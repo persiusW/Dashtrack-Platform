@@ -5,13 +5,12 @@ import Icon from "@/components/ui/Icon";
 import type { IconName } from "@/components/ui/Icon";
 
 const NAV: { href: string; label: string; icon: IconName }[] = [
-  { href: "/app/overview", label: "Overview", icon: "overview" },
-  { href: "/app/activations", label: "Activations", icon: "layers" },
-  { href: "/app/districts", label: "Districts", icon: "map" },
-  { href: "/app/zones", label: "Zones", icon: "layers" },
-  { href: "/app/agents", label: "Agents", icon: "users" },
-  { href: "/app/links", label: "Links", icon: "link" },
-  { href: "/app/settings", label: "Settings", icon: "settings" },
+  { href: "/overview", label: "Overview", icon: "overview" },
+  { href: "/activations", label: "Activations", icon: "layers" },
+  { href: "/districts", label: "Districts", icon: "map" },
+  { href: "/zones", label: "Zones", icon: "layers" },
+  { href: "/agents", label: "Agents", icon: "users" },
+  { href: "/settings", label: "Settings", icon: "settings" },
 ];
 
 export function Sidebar({ current }: { current?: string }) {
@@ -31,7 +30,7 @@ export function Sidebar({ current }: { current?: string }) {
   return (
     <aside className={`border-r border-gray-100 bg-white transition-all duration-200 ${open ? "w-60" : "w-16"} overflow-hidden`}>
       <div className="flex items-center justify-between px-3 py-3">
-        <Link href="/app/overview" className="flex items-center gap-2">
+        <Link href="/overview" className="flex items-center gap-2">
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white font-bold">D</span>
           {open && <span className="font-semibold">Dashboard</span>}
         </Link>

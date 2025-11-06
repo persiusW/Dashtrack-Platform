@@ -7,7 +7,6 @@ import {
   FolderKanban,
   MapPin as MapPinIcon,
   Users,
-  Link2,
   Settings,
   LogOut,
   Menu,
@@ -33,12 +32,12 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const navigation = [
-    { name: "Overview", href: "/app/overview", icon: LayoutDashboard },
-    { name: "Activations", href: "/app/activations", icon: FolderKanban },
-    { name: "Districts", href: "/app/districts", icon: MapPinIcon },
-    { name: "Zones", href: "/app/zones", icon: MapPinIcon },
-    { name: "Agents", href: "/app/agents", icon: Users },
-    { name: "Links", href: "/app/links", icon: Link2 },
+    { name: "Overview", href: "/overview", icon: LayoutDashboard },
+    { name: "Activations", href: "/activations", icon: FolderKanban },
+    { name: "Districts", href: "/districts", icon: MapPinIcon },
+    { name: "Zones", href: "/zones", icon: MapPinIcon },
+    { name: "Agents", href: "/agents", icon: Users },
+    { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   const adminNavigation = [
@@ -70,13 +69,13 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
         <div className="flex-1 flex flex-col">
           <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between px-4 py-3">
-              <Link href="/app/overview" className="flex items-center space-x-2">
+              <Link href="/overview" className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg" />
                 <span className="text-xl font-bold">DashTrack</span>
               </Link>
               <div className="flex items-center space-x-2">
                 <ThemeSwitch />
-                <Link href="/app/settings">
+                <Link href="/settings">
                   <Button variant="ghost" size="icon">
                     <Settings className="h-5 w-5" />
                   </Button>
@@ -105,7 +104,7 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
       >
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <Link href="/app/overview" className="flex items-center space-x-2">
+            <Link href="/overview" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg" />
               <span className="text-xl font-bold">DashTrack</span>
             </Link>
@@ -212,7 +211,7 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
               <Menu className="h-5 w-5" />
             </Button>
             <div className="flex items-center space-x-4">
-              <Link href="/app/settings">
+              <Link href="/settings">
                 <Button variant="ghost" size="icon">
                   <Settings className="h-5 w-5" />
                 </Button>

@@ -16,7 +16,7 @@ export default async function OverviewPage() {
         subtitle="Key performance from the last 7 days"
         actions={
           <Link
-            href="/app/activations/new"
+            href="/activations"
             className="btn-press rounded-lg bg-black px-4 py-2 text-sm text-white hover:bg-gray-900"
           >
             Create activation
@@ -41,25 +41,25 @@ function QuickActions() {
   return (
     <div className="reveal flex flex-wrap items-center gap-2">
       <Link
-        href="/app/activations/new"
+        href="/activations"
         className="btn-press rounded-lg bg-black px-4 py-2 text-sm text-white hover:bg-gray-900"
       >
         Create activation
       </Link>
       <Link
-        href="/app/districts"
+        href="/districts"
         className="btn-press rounded-lg border px-4 py-2 text-sm hover:bg-gray-50"
       >
         Manage districts
       </Link>
       <Link
-        href="/app/zones"
+        href="/zones"
         className="btn-press rounded-lg border px-4 py-2 text-sm hover:bg-gray-50"
       >
         Add zones
       </Link>
       <Link
-        href="/app/agents"
+        href="/agents"
         className="btn-press rounded-lg border px-4 py-2 text-sm hover:bg-gray-50"
       >
         Add agents
