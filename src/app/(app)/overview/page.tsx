@@ -59,7 +59,7 @@ function QuickActions() {
         Add zones
       </Link>
       <Link
-        href="/app/agents"
+        href="/agents"
         className="btn-press rounded-lg border px-4 py-2 text-sm hover:bg-gray-50"
       >
         Add agents

@@ -1,5 +1,5 @@
 import PageHeader from "@/components/dashboard/PageHeader";
-import CopyButton from "@/components/ui/CopyButton";
+import CopyButton from "@/components/CopyButton";
 import { cookies } from "next/headers";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import Link from "next/link";
@@ -214,7 +214,7 @@ export default async function AgentsPage() {
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim();
-  const toShort = (slug: string) => `/l/${slug}`;
+  const toShort = (slug: string) => `/r/${slug}`;
   const toAbsolute = (slug: string) => {
     const short = toShort(slug);
     return baseUrl ? `${baseUrl}${short}` : short;
@@ -265,13 +265,13 @@ export default async function AgentsPage() {
                       ) : null}
                       <Link
                         className="btn-press rounded border px-3 py-1.5 text-xs hover:bg-gray-50"
-                        href={`/app/agents/${r.id}`}
+                        href={`/agents/${r.id}`}
                       >
                         View stats
                       </Link>
                       <Link
                         className="btn-press rounded border px-3 py-1.5 text-xs hover:bg-gray-50"
-                        href={`/app/agents/${r.id}/edit`}
+                        href={`/agents/${r.id}/edit`}
                       >
                         Manage
                       </Link>

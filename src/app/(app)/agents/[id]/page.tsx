@@ -108,7 +108,7 @@ export default async function AgentDetailPage({ params }: { params: { id: string
           Agent not found.
         </div>
         <div>
-          <Link href="/app/agents" className="btn-press rounded border px-3 py-1.5 text-sm hover:bg-gray-50">
+          <Link href="/agents" className="btn-press rounded border px-3 py-1.5 text-sm hover:bg-gray-50">
             Back to Agents
           </Link>
         </div>

@@ -89,7 +89,7 @@ export default async function DistrictsPage() {
           return (
             <Link
               key={d.id}
-              href={`/app/districts/${d.id}/zones`}
+              href={`/districts/${d.id}/zones`}
               className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md"
             >
               <div className="text-lg font-semibold">{d.name}</div>
