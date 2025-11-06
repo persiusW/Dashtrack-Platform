@@ -9,6 +9,7 @@ type Agent = {
   name: string;
   notes?: string | null;
   created_at: string | null;
+  zone_id?: string | null;
 };
 
 type TrackedLinkLite = {
@@ -89,7 +90,7 @@ export default async function AgentsPage() {
   // Load agents for this org
   const { data: agentsData } = await supa
     .from("agents")
-    .select("id, name, notes, created_at")
+    .select("id, name, notes, created_at, zone_id")
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
@@ -113,7 +114,7 @@ export default async function AgentsPage() {
   if (agentIds.length) {
     const { data: linksData } = await supa
       .from("tracked_links")
-      .select("id, agent_id, slug, activation_id, zone_id, redirect_url, created_at, is_active")
+      .select("id, agent_id, slug, activation_id, zone_id, redirect_url, created_at, is_active, organization_id")
       .in("agent_id", agentIds)
       .eq("organization_id", orgId)
       .eq("is_active", true)
@@ -138,9 +139,16 @@ export default async function AgentsPage() {
   }
 
   // Collect zone/district/activation IDs
-  const zoneIds = Array.from(linksByAgent.values())
+  const linkZoneIds = Array.from(linksByAgent.values())
     .map((l) => l.zone_id)
     .filter((v): v is string => Boolean(v));
+
+  const agentZoneIds = agents
+    .map((a) => a.zone_id)
+    .filter((v): v is string => Boolean(v));
+
+  const zoneIdsSet = new Set<string>([...linkZoneIds, ...agentZoneIds]);
+  const zoneIds = Array.from(zoneIdsSet);
 
   const linkActivationIds = Array.from(linksByAgent.values())
     .map((l) => l.activation_id)
@@ -151,8 +159,9 @@ export default async function AgentsPage() {
   if (zoneIds.length) {
     const { data: zonesData } = await supa
       .from("zones")
-      .select("id, name, district_id, activation_id")
-      .in("id", zoneIds);
+      .select("id, name, district_id, activation_id, organization_id")
+      .in("id", zoneIds)
+      .eq("organization_id", orgId);
 
     const zones = (Array.isArray(zonesData) ? zonesData : []) as ZoneLite[];
     for (const z of zones) {
@@ -178,8 +187,9 @@ export default async function AgentsPage() {
   if (districtIds.length) {
     const { data: districtsData } = await supa
       .from("districts")
-      .select("id, name")
-      .in("id", districtIds);
+      .select("id, name, organization_id")
+      .in("id", districtIds)
+      .eq("organization_id", orgId);
 
     const districts = (Array.isArray(districtsData) ? districtsData : []) as DistrictLite[];
     for (const d of districts) {
@@ -192,8 +202,9 @@ export default async function AgentsPage() {
   if (activationIds.length) {
     const { data: activationsData } = await supa
       .from("activations")
-      .select("id, name")
-      .in("id", activationIds);
+      .select("id, name, organization_id")
+      .in("id", activationIds)
+      .eq("organization_id", orgId);
 
     const activations = (Array.isArray(activationsData) ? activationsData : []) as ActivationLite[];
     for (const a of activations) {
@@ -210,10 +221,13 @@ export default async function AgentsPage() {
 
   const rows = agents.map((a) => {
     const link = linksByAgent.get(a.id);
-    const zone = link?.zone_id ? zonesById.get(link.zone_id) : undefined;
+
+    // Choose zone: prefer link.zone_id, fallback to agent.zone_id
+    const zoneId = (link?.zone_id as string | undefined) || (a.zone_id as string | undefined);
+    const zone = zoneId ? zonesById.get(zoneId) : undefined;
     const district = zone?.district_id ? districtsById.get(zone.district_id) : undefined;
 
-    // Prefer activation_id from link; fall back to zone.activation_id
+    // Prefer activation_id from link; fallback to zone.activation_id
     const activationId = (link?.activation_id as string | undefined) || (zone?.activation_id as string | undefined);
     const activation = activationId ? activationsById.get(activationId) : undefined;
 

@@ -7,6 +7,7 @@ type Agent = {
   id: string;
   name: string;
   organization_id: string;
+  zone_id?: string | null;
 };
 
 type TrackedLinkLite = {
@@ -95,7 +96,7 @@ export default async function AgentDetailPage({ params }: { params: { id: string
   // Load agent restricted to organization
   const { data: agent } = await supa
     .from("agents")
-    .select("id, name, organization_id")
+    .select("id, name, organization_id, zone_id")
     .eq("id", params.id)
     .eq("organization_id", orgId)
     .maybeSingle();
@@ -119,8 +120,9 @@ export default async function AgentDetailPage({ params }: { params: { id: string
   // Latest active tracked link for this agent
   const { data: link } = await supa
     .from("tracked_links")
-    .select("id, slug, activation_id, zone_id")
+    .select("id, slug, activation_id, zone_id, organization_id")
     .eq("agent_id", agent.id)
+    .eq("organization_id", orgId)
     .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -130,19 +132,23 @@ export default async function AgentDetailPage({ params }: { params: { id: string
   let district: DistrictLite | null = null;
   let activation: ActivationLite | null = null;
 
-  if (link?.zone_id) {
+  const zoneId = (link?.zone_id as string | null) ?? (agent.zone_id as string | null) ?? null;
+
+  if (zoneId) {
     const { data: z } = await supa
       .from("zones")
-      .select("id, name, district_id, activation_id")
-      .eq("id", link.zone_id)
+      .select("id, name, district_id, activation_id, organization_id")
+      .eq("id", zoneId)
+      .eq("organization_id", orgId)
       .maybeSingle();
     zone = (z as ZoneLite) || null;
 
     if (zone?.district_id) {
       const { data: d } = await supa
         .from("districts")
-        .select("id, name")
+        .select("id, name, organization_id")
         .eq("id", zone.district_id)
+        .eq("organization_id", orgId)
         .maybeSingle();
       district = (d as DistrictLite) || null;
     }
@@ -152,8 +158,9 @@ export default async function AgentDetailPage({ params }: { params: { id: string
   if (activationId) {
     const { data: a } = await supa
       .from("activations")
-      .select("id, name")
+      .select("id, name, organization_id")
       .eq("id", activationId)
+      .eq("organization_id", orgId)
       .maybeSingle();
     activation = (a as ActivationLite) || null;
   }
@@ -173,6 +180,7 @@ export default async function AgentDetailPage({ params }: { params: { id: string
     .from("clicks")
     .select("id", { count: "exact", head: true })
     .eq("agent_id", agent.id)
+    .eq("organization_id", orgId)
     .eq("is_bot", false)
     .gte("created_at", startISO)
     .lt("created_at", tomorrowISO);
@@ -182,6 +190,7 @@ export default async function AgentDetailPage({ params }: { params: { id: string
     .from("clicks")
     .select("created_at")
     .eq("agent_id", agent.id)
+    .eq("organization_id", orgId)
     .eq("is_bot", false)
     .gte("created_at", startISO)
     .lt("created_at", tomorrowISO);
@@ -207,6 +216,7 @@ export default async function AgentDetailPage({ params }: { params: { id: string
     .from("clicks")
     .select("created_at, device_type, referrer")
     .eq("agent_id", agent.id)
+    .eq("organization_id", orgId)
     .order("created_at", { ascending: false })
     .limit(20);
 
