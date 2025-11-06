@@ -65,31 +65,13 @@ export async function POST(req: NextRequest) {
 
   const orgId = profile.organization_id;
 
-  // Insert activation. Only include columns that exist in schema.
-  // The schema widely uses default_landing_url; we set it to default_redirect_url as a sensible default.
   const activationInsert: Record<string, unknown> = {
     organization_id: orgId,
     name,
-    default_redirect_url,
     default_landing_url: default_redirect_url,
+    redirect_android_url: redirect_android_url || null,
+    redirect_ios_url: redirect_ios_url || null,
   };
-
-  // Try platform-specific URLs if such columns exist. If not, PostgREST will error; so we avoid adding unknown keys by probing a select first.
-  // We’ll attempt a no-op select to determine if columns exist, then include conditionally.
-  const { data: actCols } = await supa
-    .from("activations")
-    .select("id, default_redirect_url, default_landing_url, redirect_android_url, redirect_ios_url")
-    .limit(1);
-
-  const hasAndroidCol = Array.isArray(actCols) && actCols.length > 0 && Object.prototype.hasOwnProperty.call(actCols[0] ?? {}, "redirect_android_url");
-  const hasIosCol = Array.isArray(actCols) && actCols.length > 0 && Object.prototype.hasOwnProperty.call(actCols[0] ?? {}, "redirect_ios_url");
-
-  if (hasAndroidCol) {
-    activationInsert.redirect_android_url = redirect_android_url || null;
-  }
-  if (hasIosCol) {
-    activationInsert.redirect_ios_url = redirect_ios_url || null;
-  }
 
   const { data: activation, error: aErr } = await supa
     .from("activations")

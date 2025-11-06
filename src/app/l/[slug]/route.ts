@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ slug: s
 
   const { data: link } = await supa
     .from("tracked_links")
-    .select("slug, destination_strategy, single_url, fallback_url, is_active, activation_id")
+    .select("slug, destination_strategy, single_url, fallback_url, ios_url, android_url, is_active, activation_id")
     .eq("slug", slug)
     .eq("is_active", true)
     .maybeSingle();
@@ -30,23 +30,28 @@ export async function GET(req: NextRequest, context: { params: Promise<{ slug: s
 
   const { data: act } = await supa
     .from("activations")
-    .select("default_redirect_url, default_landing_url")
+    .select("default_landing_url, redirect_android_url, redirect_ios_url")
     .eq("id", (link as any).activation_id)
     .maybeSingle();
 
   let linkRedirect: string | undefined;
-  const strategy = (link as any).destination_strategy as string | null;
+  const strategy = (link as any)?.destination_strategy as string | null;
+
   if (strategy === "single") {
     linkRedirect = ((link as any).single_url as string | null) || undefined;
   } else {
-    linkRedirect = ((link as any).fallback_url as string | null) || undefined;
+    linkRedirect =
+      (isIOS && ((link as any).ios_url as string | null)) ||
+      (isAndroid && ((link as any).android_url as string | null)) ||
+      ((link as any).fallback_url as string | null) ||
+      undefined;
   }
 
   const dest =
     (isAndroid && (act as any)?.redirect_android_url) ||
     (isIOS && (act as any)?.redirect_ios_url) ||
     linkRedirect ||
-    (act?.default_redirect_url || act?.default_landing_url) ||
+    (act as any)?.default_landing_url ||
     "/";
 
   return NextResponse.redirect(dest, { status: 302 });
