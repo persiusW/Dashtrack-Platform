@@ -8,7 +8,6 @@ const NAV = [
   { href: "/app/districts", label: "Districts" },
   { href: "/app/zones", label: "Zones" },
   { href: "/app/agents", label: "Agents" },
-  { href: "/app/links", label: "Links" },
   { href: "/app/settings", label: "Settings" },
 ] as const;
 
