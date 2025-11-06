@@ -163,3 +163,14 @@
     }
   }
 }
+
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes pulse-ring { 0%{box-shadow:0 0 0 0 rgba(16,185,129,.35)} 70%{box-shadow:0 0 0 16px rgba(16,185,129,0)} 100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} }
+@keyframes gradientMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+@keyframes fadeUp { from{opacity:0; transform:translateY(16px)} to{opacity:1; transform:translateY(0)} }
+
+.reveal { opacity:0; transform:translateY(16px); }
+.reveal.revealed { animation: fadeUp .6s ease-out forwards; }
+
+.btn-press { transition: transform .15s ease; }
+.btn-press:active { transform: translateY(1px) scale(.99); }

@@ -19,8 +19,8 @@ import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Toaster } from "@/components/ui/toaster";
-import Sidebar from "@/components/dashboard/Sidebar";
-import Topbar from "@/components/dashboard/Topbar";
+import { Sidebar } from "@/components/dashboard/Sidebar";
+import { Topbar } from "@/components/dashboard/Topbar";
 
 interface AppLayoutProps {
   children: ReactNode;

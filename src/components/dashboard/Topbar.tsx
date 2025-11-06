@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-export function Topbar() {
+function Topbar() {
   const [query, setQuery] = useState("");
 
   return (
@@ -13,12 +13,10 @@ export function Topbar() {
         </div>
         <div className="flex items-center gap-2">
           <input
-            type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={e => setQuery(e.target.value)}
             placeholder="Quick search"
             className="w-48 rounded-lg border px-3 py-2 text-sm focus:outline-none"
-            aria-label="Quick search"
           />
         </div>
       </div>
@@ -28,15 +26,14 @@ export function Topbar() {
 
 function ActivationSelect() {
   return (
-    <select className="rounded-lg border px-3 py-2 text-sm" aria-label="Activation">
+    <select className="rounded-lg border px-3 py-2 text-sm">
       <option>All activations</option>
     </select>
   );
 }
-
 function DateSelect() {
   return (
-    <select className="rounded-lg border px-3 py-2 text-sm" aria-label="Date range">
+    <select className="rounded-lg border px-3 py-2 text-sm">
       <option>Last 7 days</option>
       <option>Last 30 days</option>
       <option>This month</option>
@@ -44,3 +41,6 @@ function DateSelect() {
     </select>
   );
 }
+
+export default Topbar;
+export { Topbar };

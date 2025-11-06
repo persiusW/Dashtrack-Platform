@@ -62,3 +62,5 @@ export function Sidebar({ current }: { current?: string }) {
     </aside>
   );
 }
+
+export default Sidebar;
