@@ -10,7 +10,7 @@ export interface CopyButtonProps {
   variant?: "default" | "secondary" | "outline" | "ghost" | "destructive" | "link";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
-  onCopied?: () =&gt; void;
+  onCopied?: () => void;
 }
 
 export function CopyButton({
@@ -26,7 +26,7 @@ export function CopyButton({
 
   async function doCopy() {
     try {
-      if (navigator.clipboard &amp;&amp; window.isSecureContext) {
+      if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
       } else {
         const ta = document.createElement("textarea");
