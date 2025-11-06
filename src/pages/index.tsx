@@ -8,7 +8,7 @@ import { StepCard } from "@/components/landing/StepCard";
 import { FeatureTabs } from "@/components/landing/FeatureTabs";
 import React, { useEffect } from "react";
 
-const YEAR = new Date().getFullYear();
+const YEAR = 2025;
 
 function RevealMount() {
   useEffect(() => {
