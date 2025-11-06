@@ -1,0 +1,1 @@
+export { CopyButton as default } from "@/components/CopyButton";
