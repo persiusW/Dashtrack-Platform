@@ -1,7 +1,7 @@
-
 import PageHeader from "@/components/dashboard/PageHeader";
 import { cookies } from "next/headers";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import Link from "next/link";
 
 type Agent = {
   id: string;
@@ -108,9 +108,9 @@ export default async function AgentDetailPage({ params }: { params: { id: string
           Agent not found.
         </div>
         <div>
-          <a href="/app/agents" className="btn-press rounded border px-3 py-1.5 text-sm hover:bg-gray-50">
+          <Link href="/app/agents" className="btn-press rounded border px-3 py-1.5 text-sm hover:bg-gray-50">
             Back to Agents
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -271,4 +271,3 @@ export default async function AgentDetailPage({ params }: { params: { id: string
     </div>
   );
 }
-  
