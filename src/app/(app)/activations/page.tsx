@@ -1,4 +1,3 @@
-
 import PageHeader from "@/components/dashboard/PageHeader";
 import { CreateActivationDialog } from "@/components/forms/CreateActivationDialog";
 
@@ -17,4 +16,3 @@ export default function ActivationsPage() {
     </div>
   );
 }
-  
