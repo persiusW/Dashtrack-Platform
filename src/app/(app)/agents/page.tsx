@@ -54,7 +54,9 @@ export interface AgentListRow {
 
 export default async function AgentsPage() {
   const supa = createServerComponentClient({ cookies });
-  const { data: { user } } = await supa.auth.getUser();
+  const {
+    data: { user },
+  } = await supa.auth.getUser();
 
   if (!user) {
     return (
@@ -86,10 +88,9 @@ export default async function AgentsPage() {
     );
   }
 
-  // Load agents for this org
   const { data: agentsData } = await supa
     .from("agents")
-    .select("id, name, notes, created_at, zone_id")
+    .select("id, name, notes, created_at, zone_id, organization_id")
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false });
 
@@ -108,7 +109,6 @@ export default async function AgentsPage() {
 
   const agentIds = agents.map((a) => a.id);
 
-  // Latest active link per agent (ordered by created_at desc)
   const linksByAgent = new Map<string, TrackedLinkLite>();
   if (agentIds.length) {
     const { data: linksData } = await supa
@@ -137,7 +137,6 @@ export default async function AgentsPage() {
     }
   }
 
-  // Collect zone/district/activation IDs
   const linkZoneIds = Array.from(linksByAgent.values())
     .map((l) => l.zone_id)
     .filter((v): v is string => Boolean(v));
@@ -153,7 +152,6 @@ export default async function AgentsPage() {
     .map((l) => l.activation_id)
     .filter((v): v is string => Boolean(v));
 
-  // Fetch zones
   const zonesById = new Map<string, ZoneLite>();
   if (zoneIds.length) {
     const { data: zonesData } = await supa
@@ -168,7 +166,6 @@ export default async function AgentsPage() {
     }
   }
 
-  // From zones, collect districtIds and activationIds
   const districtIds = Array.from(zonesById.values())
     .map((z) => z.district_id)
     .filter((v): v is string => Boolean(v));
@@ -177,11 +174,9 @@ export default async function AgentsPage() {
     .map((z) => z.activation_id)
     .filter((v): v is string => Boolean(v));
 
-  // Combine activation IDs from links and zones
   const activationIdSet = new Set<string>([...linkActivationIds, ...zoneActivationIds]);
   const activationIds = Array.from(activationIdSet);
 
-  // Fetch districts
   const districtsById = new Map<string, DistrictLite>();
   if (districtIds.length) {
     const { data: districtsData } = await supa
@@ -196,7 +191,6 @@ export default async function AgentsPage() {
     }
   }
 
-  // Fetch activations
   const activationsById = new Map<string, ActivationLite>();
   if (activationIds.length) {
     const { data: activationsData } = await supa
@@ -216,17 +210,15 @@ export default async function AgentsPage() {
   const toAbsolute = (slug: string) => {
     const short = toShort(slug);
     return baseUrl ? `${baseUrl}${short}` : short;
-    };
+  };
 
   const rows = agents.map((a) => {
     const link = linksByAgent.get(a.id);
 
-    // Choose zone: prefer link.zone_id, fallback to agent.zone_id
     const zoneId = (link?.zone_id as string | undefined) || (a.zone_id as string | undefined);
     const zone = zoneId ? zonesById.get(zoneId) : undefined;
     const district = zone?.district_id ? districtsById.get(zone.district_id) : undefined;
 
-    // Prefer activation_id from link; fallback to zone.activation_id
     const activationId = (link?.activation_id as string | undefined) || (zone?.activation_id as string | undefined);
     const activation = activationId ? activationsById.get(activationId) : undefined;
 

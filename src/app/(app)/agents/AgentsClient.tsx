@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import CopyButton from "@/components/ui/CopyButton";
+import { useAgentModals, EditAgentModal, EditLinkModal, ReassignZoneModal } from "./AgentModals";
 
 export interface AgentListRow {
   id: string;
@@ -41,6 +42,8 @@ export default function AgentsClient({ rows }: { rows: AgentListRow[] }) {
       return matchesQ && matchesAct;
     });
   }, [rows, debouncedQ, activation]);
+
+  const { editAgent, setEditAgent, editLink, setEditLink, rezone, setRezone } = useAgentModals();
 
   return (
     <div className="space-y-3">
@@ -162,6 +165,10 @@ export default function AgentsClient({ rows }: { rows: AgentListRow[] }) {
           </tbody>
         </table>
       </div>
+
+      <EditAgentModal state={editAgent} close={() => setEditAgent(null)} />
+      <EditLinkModal state={editLink} close={() => setEditLink(null)} />
+      <ReassignZoneModal state={rezone} close={() => setRezone(null)} />
     </div>
   );
 }
