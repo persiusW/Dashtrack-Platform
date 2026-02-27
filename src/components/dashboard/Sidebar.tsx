@@ -13,7 +13,15 @@ const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/app/settings", label: "Settings", icon: "settings" },
 ];
 
-export function Sidebar({ current }: { current?: string }) {
+const ADMIN_NAV: { href: string; label: string; icon: IconName }[] = [
+  { href: "/app/admin", label: "Admin Dashboard", icon: "overview" },
+  { href: "/app/admin/pricing", label: "Pricing & Plans", icon: "layers" },
+  { href: "/app/admin/organizations", label: "Organizations", icon: "map" },
+  { href: "/app/admin/users", label: "Users", icon: "users" },
+  { href: "/app/admin/agents", label: "Agents Management", icon: "users" },
+];
+
+export function Sidebar({ current, role }: { current?: string; role?: string }) {
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
@@ -51,7 +59,7 @@ export function Sidebar({ current }: { current?: string }) {
             <Link
               key={n.href}
               href={n.href}
-              className={`flex items-center gap-2 px-3 py-2 text-sm ${active ? "bg-gray-900 text-white" : "hover:bg-gray-50"}`}
+              className={`flex items-center gap-2 px-3 py-2 text-sm ${active ? "bg-gray-900 text-white" : "hover:bg-gray-50 text-gray-700"}`}
               title={n.label}
               aria-current={active ? "page" : undefined}
             >
@@ -62,6 +70,31 @@ export function Sidebar({ current }: { current?: string }) {
             </Link>
           );
         })}
+
+        {role === "admin" && (
+          <div className="mt-6">
+            <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              {open ? "Super Admin" : "Adm"}
+            </div>
+            {ADMIN_NAV.map((n) => {
+              const active = current ? current.startsWith(n.href) : false;
+              return (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm ${active ? "bg-purple-900 text-white" : "hover:bg-purple-50 text-gray-700"}`}
+                  title={n.label}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${active ? "bg-white/20 text-white" : "bg-purple-100 text-purple-700"}`}>
+                    <Icon name={n.icon} className="h-4 w-4" />
+                  </span>
+                  {open && <span className="truncate">{n.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </nav>
     </aside>
   );

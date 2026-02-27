@@ -26,9 +26,9 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   session: null,
   loading: true,
-  signIn: async () => {},
-  signInWithGoogle: async () => {},
-  signOut: async () => {},
+  signIn: async () => { },
+  signInWithGoogle: async () => { },
+  signOut: async () => { },
   profile: null,
   isLoading: true,
 });
@@ -38,7 +38,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profile] = useState<AppProfile | null>(null);
+  const [profile, setProfile] = useState<AppProfile | null>(null);
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      // Fetch role and organization from users table
+      const { data: userRecord, error: userError } = await supabase
+        .from("users" as any)
+        .select("role, organization_id")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (userError) throw userError;
+
+      // Fetch email and full_name from profiles table
+      const { data: profileRecord, error: profileError } = await supabase
+        .from("profiles" as any)
+        .select("email, full_name")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      setProfile({
+        role: userRecord?.role,
+        organization_id: userRecord?.organization_id,
+        email: profileRecord?.email,
+        full_name: profileRecord?.full_name,
+      });
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      setProfile(null);
+    }
+  };
 
   // Initialize session and user
   useEffect(() => {
@@ -46,13 +78,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (cancelled) return;
       setSession(session ?? null);
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        fetchProfile(currentUser.id);
+      }
       setLoading(false);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession ?? null);
-      setUser(newSession?.user ?? null);
+      const currentUser = newSession?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        fetchProfile(currentUser.id);
+      } else {
+        setProfile(null);
+      }
     });
 
     return () => {
@@ -76,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             refresh_token: sessionNow.refresh_token,
           }),
         });
-      } catch {}
+      } catch { }
     }
   };
 
