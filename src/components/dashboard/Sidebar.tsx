@@ -5,12 +5,12 @@ import Icon from "@/components/ui/Icon";
 import type { IconName } from "@/components/ui/Icon";
 
 const NAV: { href: string; label: string; icon: IconName }[] = [
-  { href: "/overview", label: "Overview", icon: "overview" },
-  { href: "/activations", label: "Activations", icon: "layers" },
-  { href: "/districts", label: "Districts", icon: "map" },
-  { href: "/zones", label: "Zones", icon: "layers" },
-  { href: "/agents", label: "Agents", icon: "users" },
-  { href: "/settings", label: "Settings", icon: "settings" },
+  { href: "/app/overview", label: "Overview", icon: "overview" },
+  { href: "/app/activations", label: "Activations", icon: "layers" },
+  { href: "/app/districts", label: "Districts", icon: "map" },
+  { href: "/app/zones", label: "Zones", icon: "layers" },
+  { href: "/app/agents", label: "Agents", icon: "users" },
+  { href: "/app/settings", label: "Settings", icon: "settings" },
 ];
 
 export function Sidebar({ current }: { current?: string }) {
