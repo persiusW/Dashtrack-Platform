@@ -33,11 +33,11 @@ function getTurboRules() {
 
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    turbo: {
-      rules: getTurboRules(),
-    },
+  turbopack: {
+    root: "/Users/persiusaddo/Documents/GitHub/Dashtrack-Platform/Dashtrack-Platform",
+    rules: getTurboRules(),
   },
+  experimental: {},
   images: {
     remotePatterns: [
       {

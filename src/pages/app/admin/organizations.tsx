@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
+import { AppLayout } from "@/components/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -148,120 +149,124 @@ export default function AdminOrganizationsPage() {
 
   if (authLoading || !user || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
+      <AppLayout variant="simple">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
+            <p className="mt-4 text-muted-foreground">Loading...</p>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Organizations</h1>
-          <p className="text-muted-foreground mt-1">Manage organizations and their plans</p>
+    <AppLayout variant="simple">
+      <div className="container mx-auto p-4 md:p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Organizations</h1>
+            <p className="text-muted-foreground mt-1">Manage organizations and their plans</p>
+          </div>
+          <Button onClick={() => setIsCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Organization
+          </Button>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Organization
-        </Button>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            All Organizations
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {organizations.length === 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              All Organizations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    No organizations found
-                  </TableCell>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ) : (
-                organizations.map((org) => (
-                  <TableRow key={org.id}>
-                    <TableCell className="font-medium">{org.name}</TableCell>
-                    <TableCell>
-                      <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 capitalize">
-                        {org.plan || "N/A"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {org.created_at ? new Date(org.created_at).toLocaleDateString() : "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
-                        View Details
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {organizations.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      No organizations found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                ) : (
+                  organizations.map((org) => (
+                    <TableRow key={org.id}>
+                      <TableCell className="font-medium">{org.name}</TableCell>
+                      <TableCell>
+                        <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 capitalize">
+                          {org.plan || "N/A"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {org.created_at ? new Date(org.created_at).toLocaleDateString() : "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          View Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Organization</DialogTitle>
-            <DialogDescription>
-              Add a new organization to the system
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="orgName">Organization Name</Label>
-              <Input
-                id="orgName"
-                value={newOrgName}
-                onChange={(e) => setNewOrgName(e.target.value)}
-                placeholder="Enter organization name"
-              />
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Organization</DialogTitle>
+              <DialogDescription>
+                Add a new organization to the system
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="orgName">Organization Name</Label>
+                <Input
+                  id="orgName"
+                  value={newOrgName}
+                  onChange={(e) => setNewOrgName(e.target.value)}
+                  placeholder="Enter organization name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="orgPlan">Plan</Label>
+                <Select value={newOrgPlan} onValueChange={setNewOrgPlan}>
+                  <SelectTrigger id="orgPlan">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="free">Free</SelectItem>
+                    <SelectItem value="basic">Basic</SelectItem>
+                    <SelectItem value="pro">Pro</SelectItem>
+                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="orgPlan">Plan</Label>
-              <Select value={newOrgPlan} onValueChange={setNewOrgPlan}>
-                <SelectTrigger id="orgPlan">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="basic">Basic</SelectItem>
-                  <SelectItem value="pro">Pro</SelectItem>
-                  <SelectItem value="enterprise">Enterprise</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateOrg} disabled={submitting}>
-              {submitting ? "Creating..." : "Create"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateOrg} disabled={submitting}>
+                {submitting ? "Creating..." : "Create"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </AppLayout>
   );
 }

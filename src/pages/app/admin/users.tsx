@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
+import { AppLayout } from "@/components/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -45,7 +46,7 @@ export default function AdminUsersPage() {
       const fetchUsers = async () => {
         try {
           setIsLoading(true);
-          
+
           const { data: usersData, error: usersError } = await supabase
             .from("users")
             .select(`
@@ -64,10 +65,10 @@ export default function AdminUsersPage() {
           const authUserMap = new Map<string, string | undefined>();
           for (const u of authUserList) {
             if (u.id) {
-                authUserMap.set(u.id, u.email);
+              authUserMap.set(u.id, u.email);
             }
           }
-          
+
           const combinedUsers = usersData?.map(u => ({
             ...u,
             email: authUserMap.get(u.id) || "N/A"
@@ -140,10 +141,10 @@ export default function AdminUsersPage() {
       const authUserMap = new Map<string, string | undefined>();
       for (const u of authUserList) {
         if (u.id) {
-            authUserMap.set(u.id, u.email);
+          authUserMap.set(u.id, u.email);
         }
       }
-      
+
       const combinedUsers = usersData?.map(u => ({
         ...u,
         email: authUserMap.get(u.id) || "N/A"
@@ -180,89 +181,93 @@ export default function AdminUsersPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
+      <AppLayout variant="simple">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
+            <p className="mt-4 text-muted-foreground">Loading...</p>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">User Management</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage user roles and permissions
-        </p>
-      </div>
+    <AppLayout variant="simple">
+      <div className="container mx-auto p-4 md:p-6 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">User Management</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage user roles and permissions
+          </p>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UsersIcon className="h-5 w-5" />
-            All Users
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Organization</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.length === 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UsersIcon className="h-5 w-5" />
+              All Users
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No users found
-                  </TableCell>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Organization</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ) : (
-                users.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell className="font-medium">{u.email}</TableCell>
-                    <TableCell>{u.organization?.name || "N/A"}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs ${getRoleBadgeColor(u.role)}`}>
-                        {u.role.replace("_", " ")}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(u.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={u.role}
-                        onValueChange={(newRole) => handleRoleChange(u.id, newRole)}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">
-                            <div className="flex items-center gap-2">
-                              <Shield className="h-4 w-4" />
-                              Admin
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="client_manager">Client Manager</SelectItem>
-                          <SelectItem value="zone_supervisor">Zone Supervisor</SelectItem>
-                        </SelectContent>
-                      </Select>
+              </TableHeader>
+              <TableBody>
+                {users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No users found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+                ) : (
+                  users.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.email}</TableCell>
+                      <TableCell>{u.organization?.name || "N/A"}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs ${getRoleBadgeColor(u.role)}`}>
+                          {u.role.replace("_", " ")}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(u.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={u.role}
+                          onValueChange={(newRole) => handleRoleChange(u.id, newRole)}
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">
+                              <div className="flex items-center gap-2">
+                                <Shield className="h-4 w-4" />
+                                Admin
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="client_manager">Client Manager</SelectItem>
+                            <SelectItem value="zone_supervisor">Zone Supervisor</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </AppLayout>
   );
 }

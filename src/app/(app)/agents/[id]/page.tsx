@@ -55,7 +55,8 @@ function isoAtUTCStartOfDay(daysFromToday: number): string {
   return d.toISOString();
 }
 
-export default async function AgentDetailPage({ params }: { params: { id: string } }) {
+export default async function AgentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supa = createServerComponentClient({ cookies });
 
   const {
@@ -97,7 +98,7 @@ export default async function AgentDetailPage({ params }: { params: { id: string
   const { data: agent } = await supa
     .from("agents")
     .select("id, name, organization_id, zone_id")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("organization_id", orgId)
     .maybeSingle();
 

@@ -148,26 +148,67 @@ export default function Home() {
 
       <section id="pricing" className="bg-[linear-gradient(180deg,white,#FAFAFA)] py-14">
         <div className="mx-auto max-w-6xl px-4 text-center">
-          <h2 className="reveal text-2xl font-bold">Simple monthly pricing</h2>
-          <p className="reveal mt-2 text-gray-600">Everything you need to run and measure activations.</p>
+          <h2 className="reveal text-3xl font-bold tracking-tight">Simple monthly pricing</h2>
+          <p className="reveal mt-3 text-gray-600">Choose the perfect plan to run and measure your activations.</p>
 
-          <div className="reveal mx-auto mt-8 max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex items-end justify-center gap-1">
-              <span className="text-4xl font-extrabold">$960</span>
-              <span className="pb-1 text-gray-600">/ month</span>
-            </div>
-            <ul className="mt-4 space-y-2 text-left text-sm text-gray-700">
-              <li>• Unlimited activations, districts &amp; zones</li>
-              <li>• Unique links/QRs for agents + public stats</li>
-              <li>• Real-time dashboard + CSV exports</li>
-              <li>• Weekly performance report &amp; support</li>
-            </ul>
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Link href="/signup" className="btn-press rounded-lg bg-black px-5 py-3 text-sm font-medium text-white hover:bg-gray-900">
-                Start free
+          <div className="reveal mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+            {/* Tier 1 */}
+            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-sm transition-colors hover:border-gray-300">
+              <h3 className="text-xl font-semibold">Starter</h3>
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="text-3xl font-extrabold">GHC 5,500</span>
+                <span className="text-gray-500">/mo</span>
+              </div>
+              <p className="mt-2 text-sm text-gray-500">Perfect for small, brief activations.</p>
+              <ul className="mb-8 mt-6 flex-1 space-y-3 text-sm text-gray-700">
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> 1 Active Campaign</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Up to 2 Locations (Zones)</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Unique QRs for Agents</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Real-time Dashboard</li>
+              </ul>
+              <Link href="/signup?plan=starter" className="btn-press mt-auto block w-full rounded-lg border border-gray-200 py-3 text-center text-sm font-medium transition-colors hover:bg-gray-50">
+                Get Started
               </Link>
-              <Link href="/login" className="btn-press rounded-lg border border-gray-200 bg-white px-5 py-3 text-sm font-medium hover:bg-gray-50">
-                Log in
+            </div>
+
+            {/* Tier 2 */}
+            <div className="relative flex transform flex-col rounded-2xl border-2 border-black bg-white p-6 text-left shadow-md md:-translate-y-2">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-black px-3 py-1 text-xs font-semibold text-white">
+                Most Popular
+              </div>
+              <h3 className="text-xl font-semibold">Professional</h3>
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="text-3xl font-extrabold">GHC 9,600</span>
+                <span className="text-gray-500">/mo</span>
+              </div>
+              <p className="mt-2 text-sm text-gray-500">For scaling marketing efforts.</p>
+              <ul className="mb-8 mt-6 flex-1 space-y-3 text-sm text-gray-700">
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> 2 Active Campaigns</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Up to 4 Locations each</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> CSV Data Exports</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Auto Weekly Reports</li>
+              </ul>
+              <Link href="/signup?plan=professional" className="btn-press mt-auto block w-full rounded-lg bg-black py-3 text-center text-sm font-medium text-white transition-colors hover:bg-gray-900">
+                Get Started
+              </Link>
+            </div>
+
+            {/* Tier 3 */}
+            <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-sm transition-colors hover:border-gray-300">
+              <h3 className="text-xl font-semibold">Enterprise</h3>
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="text-3xl font-extrabold">GHC 15,000</span>
+                <span className="text-gray-500">/mo</span>
+              </div>
+              <p className="mt-2 text-sm text-gray-500">Maximum coverage and flexibility.</p>
+              <ul className="mb-8 mt-6 flex-1 space-y-3 text-sm text-gray-700">
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> 4 Active Campaigns</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Up to 7 Locations each</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Priority Email Support</li>
+                <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Public Shareable Stats</li>
+              </ul>
+              <Link href="/signup?plan=enterprise" className="btn-press mt-auto block w-full rounded-lg border border-gray-200 py-3 text-center text-sm font-medium transition-colors hover:bg-gray-50">
+                Get Started
               </Link>
             </div>
           </div>

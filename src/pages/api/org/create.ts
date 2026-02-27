@@ -4,7 +4,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 const createOrgSchema = z.object({
   organizationName: z.string().min(2, 'Organization name must be at least 2 characters'),
-  plan: z.enum(['free', 'pro', 'enterprise']).default('free'),
+  plan: z.enum(['free', 'starter', 'professional', 'enterprise']).default('free'),
 });
 
 export default async function handler(
@@ -38,18 +38,18 @@ export default async function handler(
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return res.status(401).json({ 
-        ok: false, 
-        error: 'Not authenticated. Please log in first.' 
+      return res.status(401).json({
+        ok: false,
+        error: 'Not authenticated. Please log in first.'
       });
     }
 
     const parsed = createOrgSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ 
-        ok: false, 
-        error: 'Validation failed', 
-        details: parsed.error.flatten() 
+      return res.status(400).json({
+        ok: false,
+        error: 'Validation failed',
+        details: parsed.error.flatten()
       });
     }
 
@@ -62,9 +62,9 @@ export default async function handler(
       .maybeSingle();
 
     if (existingProfile?.organization_id) {
-      return res.status(400).json({ 
-        ok: false, 
-        error: 'User already belongs to an organization' 
+      return res.status(400).json({
+        ok: false,
+        error: 'User already belongs to an organization'
       });
     }
 
@@ -76,10 +76,10 @@ export default async function handler(
 
     if (orgError) {
       console.error('Organization creation error:', orgError);
-      return res.status(400).json({ 
-        ok: false, 
-        error: 'Failed to create organization', 
-        details: orgError.message 
+      return res.status(400).json({
+        ok: false,
+        error: 'Failed to create organization',
+        details: orgError.message
       });
     }
 
@@ -113,9 +113,9 @@ export default async function handler(
     });
   } catch (error) {
     console.error('Create organization error:', error);
-    return res.status(500).json({ 
-      ok: false, 
-      error: 'Internal server error' 
+    return res.status(500).json({
+      ok: false,
+      error: 'Internal server error'
     });
   }
 }

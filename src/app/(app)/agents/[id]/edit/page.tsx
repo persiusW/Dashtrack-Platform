@@ -4,7 +4,8 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 
-export default async function AgentManagePage({ params }: { params: { id: string } }) {
+export default async function AgentManagePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supa = createServerComponentClient({ cookies });
   const {
     data: { user },
@@ -24,7 +25,7 @@ export default async function AgentManagePage({ params }: { params: { id: string
   const { data: agent } = await supa
     .from("agents")
     .select("id, name")
-    .eq("id", params.id)
+    .eq("id", id)
     .maybeSingle();
 
   if (!agent) {
@@ -67,4 +68,3 @@ export default async function AgentManagePage({ params }: { params: { id: string
     </div>
   );
 }
-  

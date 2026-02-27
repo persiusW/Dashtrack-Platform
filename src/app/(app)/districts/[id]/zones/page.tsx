@@ -22,7 +22,8 @@ type ZoneLite = {
   created_at: string | null;
 };
 
-export default async function DistrictZonesPage({ params }: { params: { id: string } }) {
+export default async function DistrictZonesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supa = createServerComponentClient({ cookies });
 
   const {
@@ -63,7 +64,7 @@ export default async function DistrictZonesPage({ params }: { params: { id: stri
   const { data: district } = await supa
     .from("districts")
     .select("id, name, activation_id, created_at, activation:activations(id, name)")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("organization_id", orgId)
     .maybeSingle();
 
@@ -149,4 +150,3 @@ export default async function DistrictZonesPage({ params }: { params: { id: stri
     </div>
   );
 }
-  

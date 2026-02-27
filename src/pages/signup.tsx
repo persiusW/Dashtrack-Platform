@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 export default function SignupPage() {
   const supabase = createClientComponentClient();
   const router = useRouter();
+  const { plan } = router.query;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,7 +61,10 @@ export default function SignupPage() {
       const orgResponse = await fetch("/api/org/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizationName: organizationName.trim() }),
+        body: JSON.stringify({
+          organizationName: organizationName.trim(),
+          plan: plan && typeof plan === 'string' ? plan : 'free'
+        }),
       });
 
       const orgResult = await orgResponse.json();

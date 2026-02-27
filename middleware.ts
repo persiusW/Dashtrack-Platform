@@ -14,16 +14,16 @@ export async function middleware(req: NextRequest) {
   const isAppRoute = pathname.startsWith("/app");
   const isAuthRoute = pathname === "/login" || pathname === "/signup";
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
+
   if (isAppRoute && !session) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/login";
+    const url = new URL("/login", baseUrl);
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
   if (isAuthRoute && session) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/app/overview";
+    const url = new URL("/app/overview", baseUrl);
     return NextResponse.redirect(url);
   }
 

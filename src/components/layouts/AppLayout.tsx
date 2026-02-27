@@ -12,6 +12,8 @@ import {
   Menu,
   X,
   Building2,
+  CreditCard,
+  UserCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
@@ -41,8 +43,11 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
   ];
 
   const adminNavigation = [
+    { name: "Dashboard", href: "/app/admin", icon: LayoutDashboard },
+    { name: "Pricing & Plans", href: "/app/admin/pricing", icon: CreditCard },
     { name: "Organizations", href: "/app/admin/organizations", icon: Building2 },
     { name: "Users", href: "/app/admin/users", icon: Users },
+    { name: "Agents", href: "/app/admin/agents", icon: UserCheck },
   ];
 
   const isActive = (href: string) => {
@@ -88,7 +93,7 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
             </div>
           </header>
           <Topbar />
-          <main className="p-6">{children}</main>
+          <main className="p-4 md:p-6">{children}</main>
           <Toaster />
         </div>
       </div>
@@ -98,9 +103,8 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-200 ease-in-out ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-200 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
@@ -125,11 +129,10 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive(item.href)
-                      ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
-                      : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                  }`}
+                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive(item.href)
+                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                    }`}
                 >
                   <Icon className="h-5 w-5" />
                   <span className="font-medium">{item.name}</span>
@@ -150,11 +153,10 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
                     <Link
                       key={item.name}
                       href={item.href}
-                      className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                        isActive(item.href)
-                          ? "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400"
-                          : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                      }`}
+                      className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive(item.href)
+                        ? "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400"
+                        : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        }`}
                     >
                       <Icon className="h-5 w-5" />
                       <span className="font-medium">{item.name}</span>
@@ -220,7 +222,7 @@ export function AppLayout({ children, variant = "full" }: AppLayoutProps) {
           </div>
         </header>
 
-        <main className="p-6">{children}</main>
+        <main className="p-4 md:p-6">{children}</main>
         <Toaster />
       </div>
     </div>
