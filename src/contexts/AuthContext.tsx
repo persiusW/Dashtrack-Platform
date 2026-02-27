@@ -20,6 +20,7 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   profile: AppProfile | null;
   isLoading: boolean;
+  supabase: any;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -31,6 +32,7 @@ const AuthContext = createContext<AuthContextValue>({
   signOut: async () => { },
   profile: null,
   isLoading: true,
+  supabase: null as any,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -134,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const value: AuthContextValue = { user, session, loading, signIn, signInWithGoogle, signOut, profile, isLoading: loading };
+  const value: AuthContextValue = { user, session, loading, signIn, signInWithGoogle, signOut, profile, isLoading: loading, supabase };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

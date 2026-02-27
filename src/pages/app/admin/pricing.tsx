@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Save, RefreshCw, CreditCard } from "lucide-react";
 
@@ -21,7 +20,7 @@ type PlatformSetting = {
 };
 
 export default function AdminPricingPage() {
-    const { user, isLoading: authLoading } = useAuth();
+    const { user, isLoading: authLoading, supabase } = useAuth();
     const router = useRouter();
 
     const [loading, setLoading] = useState(true);

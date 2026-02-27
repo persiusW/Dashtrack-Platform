@@ -3,13 +3,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layouts/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Building2, Users, UserCheck, MousePointerClick, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminOverviewPage() {
-    const { user, isLoading: authLoading } = useAuth();
+    const { user, isLoading: authLoading, supabase } = useAuth();
     const router = useRouter();
 
     const [loading, setLoading] = useState(true);

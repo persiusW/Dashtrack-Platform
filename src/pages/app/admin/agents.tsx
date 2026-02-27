@@ -12,7 +12,6 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { UserCheck, ShieldOff, ShieldCheck } from "lucide-react";
 
@@ -30,7 +29,7 @@ type Agent = {
 export default function AdminAgentsPage() {
     const [agents, setAgents] = useState<Agent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const { user, isLoading: authLoading } = useAuth();
+    const { user, isLoading: authLoading, supabase } = useAuth();
     const router = useRouter();
 
     useEffect(() => {

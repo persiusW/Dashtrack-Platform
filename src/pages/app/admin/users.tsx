@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Users as UsersIcon, Shield } from "lucide-react";
 
@@ -38,7 +37,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, supabase } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -59,17 +58,17 @@ export default function AdminUsersPage() {
 
           if (usersError) throw usersError;
 
-          const { data: { users: authUserList }, error: authError } = await supabase.auth.admin.listUsers();
-          if (authError) throw authError;
+          const { users: authUserList, error: authError } = await fetch("/api/admin/list-users").then(res => res.json());
+          if (authError) throw new Error(authError);
 
           const authUserMap = new Map<string, string | undefined>();
-          for (const u of authUserList) {
+          for (const u of (authUserList || [])) {
             if (u.id) {
               authUserMap.set(u.id, u.email);
             }
           }
 
-          const combinedUsers = usersData?.map(u => ({
+          const combinedUsers = usersData?.map((u: any) => ({
             ...u,
             email: authUserMap.get(u.id) || "N/A"
           })) || [];
@@ -135,17 +134,17 @@ export default function AdminUsersPage() {
 
       if (usersError) throw usersError;
 
-      const { data: { users: authUserList }, error: authError } = await supabase.auth.admin.listUsers();
-      if (authError) throw authError;
+      const { users: authUserList, error: authError } = await fetch("/api/admin/list-users").then(res => res.json());
+      if (authError) throw new Error(authError);
 
       const authUserMap = new Map<string, string | undefined>();
-      for (const u of authUserList) {
+      for (const u of (authUserList || [])) {
         if (u.id) {
           authUserMap.set(u.id, u.email);
         }
       }
 
-      const combinedUsers = usersData?.map(u => ({
+      const combinedUsers = usersData?.map((u: any) => ({
         ...u,
         email: authUserMap.get(u.id) || "N/A"
       })) || [];
