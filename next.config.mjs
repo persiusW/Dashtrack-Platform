@@ -22,11 +22,9 @@ function getTurboRules() {
   return {
     "*.tsx": {
       loaders: ["@softgenai/element-tagger"],
-      as: "*.tsx",
     },
     "*.jsx": {
       loaders: ["@softgenai/element-tagger"],
-      as: "*.jsx",
     },
   };
 }
